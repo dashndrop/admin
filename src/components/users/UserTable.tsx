@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal, Search, Filter, ArrowUpDown, ChevronRight } from "lucide-react";
@@ -187,7 +188,7 @@ export function UserTable() {
         <div className="flex items-center gap-2">
           <DropdownMenu open={filterOpen} onOpenChange={setFilterOpen}>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="flex items-center gap-2">
+              <Button variant="outline" className="flex items-center gap-2" style={{border: "none"}}>
                 <Filter className="h-4 w-4" />
                 Filter
               </Button>
@@ -204,7 +205,7 @@ export function UserTable() {
               </div>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button variant="outline" className="flex items-center gap-2">
+          <Button variant="outline" className="flex items-center gap-2" style={{border: "none"}}>
             <ArrowUpDown className="h-4 w-4" />
             Sort
           </Button>
@@ -215,7 +216,7 @@ export function UserTable() {
         <TableHeader>
           <TableRow className="bg-muted/50">
             <TableHead className="w-12">
-              <input type="checkbox" className="rounded" />
+              <Checkbox className="h-4 w-4" />
             </TableHead>
             <TableHead>User Name</TableHead>
             <TableHead>Email</TableHead>
@@ -236,7 +237,7 @@ export function UserTable() {
             .map((user) => (
               <TableRow key={user.id} className="hover:bg-muted/50">
                 <TableCell>
-                  <input type="checkbox" className="rounded" />
+                  <Checkbox className="h-4 w-4" />
                 </TableCell>
                 <TableCell className="font-medium">{user.name}</TableCell>
                 <TableCell>{user.email}</TableCell>

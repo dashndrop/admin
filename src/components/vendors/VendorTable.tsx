@@ -214,11 +214,11 @@ export function VendorTable() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" style={{border: "none"}}>
             <Filter className="h-4 w-4 mr-2" />
             Filter
           </Button>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" style={{border: "none"}}>
             <ArrowUpDown className="h-4 w-4 mr-2" />
             Sort
           </Button>

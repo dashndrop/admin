@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import supportIcon from "/img/supportTv.png"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -12,156 +12,140 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { 
-  HelpCircle, 
   Search, 
   Filter, 
   SortAsc, 
-  Eye,
-  UserCheck,
-  X
+  ChevronRight
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { PaginationControls } from "@/components/ui/pagination-controls";
-import { ReassignTicketModal } from "@/components/support/ReassignTicketModal";
-import { CloseTicketModal } from "@/components/support/CloseTicketModal";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const Support = () => {
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedTicket, setSelectedTicket] = useState<any>(null);
-  const [isReassignModalOpen, setIsReassignModalOpen] = useState(false);
-  const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"User" | "Vendor" | "Rider">("User");
+  const navigate = useNavigate();
 
   const ticketsData = [
     {
       id: "TKT-001",
-      subject: "Unable to place order",
-      user: "John Smith",
-      department: "Technical Support",
+      ticketId: "TCK-1043",
+      date: "Aug 19",
+      user: "Mariam Ajani",
+      issue: "Missing item in order ORD-887",
       priority: "High",
-      status: "Open",
-      assignedTo: "Sarah Johnson",
-      dateCreated: "10 Dec 2024",
-      description: "Customer cannot complete checkout process",
+      status: "In Progress",
+      assignedTo: "Admin Mary",
     },
     {
       id: "TKT-002",
-      subject: "Payment failed",
-      user: "Mike Brown",
-      department: "Billing",
+      ticketId: "TCK-1043",
+      date: "Aug 19",
+      user: "Mariam Ajani",
+      issue: "Missing item in order ORD-887",
       priority: "Medium", 
-      status: "In Progress",
-      assignedTo: "David Wilson",
-      dateCreated: "09 Dec 2024",
-      description: "Card payment failing during checkout",
+      status: "Open",
+      assignedTo: "unassigned",
     },
     {
       id: "TKT-003",
-      subject: "App crashes on startup",
-      user: "Sarah Davis",
-      department: "Technical Support",
+      ticketId: "TCK-1043",
+      date: "Aug 19",
+      user: "Mariam Ajani",
+      issue: "Missing item in order ORD-887",
       priority: "High",
       status: "Resolved",
-      assignedTo: "Tom Anderson",
-      dateCreated: "08 Dec 2024",
-      description: "Mobile app crashing when user tries to open",
+      assignedTo: "Admin John",
     },
   ];
 
-  const getStatusBadge = (status: string) => {
-    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-      "Open": "destructive",
-      "In Progress": "secondary",
-      "Resolved": "default",
-      "Closed": "outline",
-    };
-    return <Badge variant={variants[status] || "outline"}>{status}</Badge>;
+  const rows = useMemo(() => {
+    const base = ticketsData;
+    const copies = Array.from({ length: 12 }, (_, i) => ({ ...base[i % base.length], id: `${base[i % base.length].id}-${i}` }));
+    return copies;
+  }, [ticketsData]);
+
+  const Priority = ({ value }: { value: string }) => {
+    const color = value === "High" ? "bg-red-500" : value === "Medium" ? "bg-orange-400" : "bg-yellow-400";
+    return (
+      <div className="flex items-center gap-2">
+        <span className={`w-3 h-3 rounded-full ${color}`} />
+        <span>{value}</span>
+      </div>
+    );
   };
 
-  const getPriorityBadge = (priority: string) => {
-    const variants: Record<string, "default" | "secondary" | "destructive"> = {
-      "High": "destructive",
-      "Medium": "secondary", 
-      "Low": "default",
-    };
-    return <Badge variant={variants[priority] || "default"}>{priority}</Badge>;
-  };
-
-  const handleReassign = (ticket: any) => {
-    setSelectedTicket(ticket);
-    setIsReassignModalOpen(true);
-  };
-
-  const handleClose = (ticket: any) => {
-    setSelectedTicket(ticket);
-    setIsCloseModalOpen(true);
+  const Status = ({ value }: { value: string }) => {
+    const color = value === "In Progress" ? "bg-yellow-400" : value === "Open" ? "bg-green-500" : value === "Closed" ? "bg-red-500" : "bg-gray-400";
+    return (
+      <div className="flex items-center gap-2">
+        <span className={`w-3 h-3 rounded-full ${color}`} />
+        <span>{value}</span>
+      </div>
+    );
   };
 
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Support Tickets</h1>
-          <p className="text-muted-foreground">Manage customer support requests and tickets</p>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <img src={supportIcon} alt="Riders" className="w-15 h-15 rounded" />
+            Riders Management
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit
+          </p>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Tickets</CardTitle>
-            <HelpCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">500</div>
-            <p className="text-xs text-muted-foreground">+5% from last month</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Open</CardTitle>
-            <HelpCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">20</div>
-            <p className="text-xs text-muted-foreground">-2% from last month</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">In Progress</CardTitle>
-            <HelpCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">50</div>
-            <p className="text-xs text-muted-foreground">+8% from last month</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Resolved</CardTitle>
-            <HelpCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">150</div>
-            <p className="text-xs text-muted-foreground">+12% from last month</p>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {[
+          { title: "All Tickets", value: "500" },
+          { title: "Resolved", value: "300" },
+          { title: "In-Progress", value: "50" },
+          { title: "Closed", value: "150" },
+        ].map((m) => (
+          <Card key={m.title}>
+            <CardContent className="py-6">
+              <p className="text-sm text-muted-foreground">{m.title}</p>
+              <p className="text-3xl font-bold">{m.value}</p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      {/* Search and Filter */}
+      {/* Tabs + Search + Actions */}
       <div className="flex items-center gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search tickets..." className="pl-10" />
+        <div className="flex border rounded-md p-1">
+          {(["User","Vendor","Rider"] as const).map((t) => (
+            <Button
+              key={t}
+              variant={activeTab === t ? "default" : "ghost"}
+              className={`${activeTab === t ? "bg-primary text-primary-foreground" : "text-muted-foreground"} h-8 px-3`}
+              onClick={() => setActiveTab(t)}
+            >
+              {t}
+            </Button>
+          ))}
         </div>
-        <Button variant="outline" size="sm">
-          <Filter className="h-4 w-4 mr-2" />
-          Filter
-        </Button>
-        <Button variant="outline" size="sm">
-          <SortAsc className="h-4 w-4 mr-2" />
-          Sort
-        </Button>
+
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Ticket ID / User Email / Order ID" className="pl-10" />
+        </div>
+
+        <div className="ml-auto flex items-center gap-2">
+          <Button variant="outline" size="sm" className="flex items-center gap-2"  style={{border: "none"}}>
+            <Filter className="h-4 w-4" />
+            Filter
+          </Button>
+          <Button variant="outline" size="sm" className="flex items-center gap-2" style={{border: "none"}}>
+            <SortAsc className="h-4 w-4" />
+            Sort
+          </Button>
+        </div>
       </div>
 
       {/* Tickets Table */}
@@ -169,46 +153,37 @@ const Support = () => {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-8">
+                <Checkbox className="h-4 w-4" />
+              </TableHead>
               <TableHead>Ticket ID</TableHead>
-              <TableHead>Subject</TableHead>
+              <TableHead>Date</TableHead>
               <TableHead>User</TableHead>
-              <TableHead>Department</TableHead>
+              <TableHead>Issue Summary</TableHead>
               <TableHead>Priority</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Assigned To</TableHead>
+              <TableHead>Assigned to</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {ticketsData.map((ticket) => (
-              <TableRow key={ticket.id}>
-                <TableCell className="font-medium">{ticket.id}</TableCell>
-                <TableCell>{ticket.subject}</TableCell>
-                <TableCell>{ticket.user}</TableCell>
-                <TableCell>{ticket.department}</TableCell>
-                <TableCell>{getPriorityBadge(ticket.priority)}</TableCell>
-                <TableCell>{getStatusBadge(ticket.status)}</TableCell>
-                <TableCell>{ticket.assignedTo}</TableCell>
+            {rows.map((row) => (
+              <TableRow key={row.id}>
                 <TableCell>
-                  <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="sm">
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => handleReassign(ticket)}
-                    >
-                      <UserCheck className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => handleClose(ticket)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <Checkbox className="h-4 w-4" />
+                </TableCell>
+                <TableCell className="font-medium">{row.ticketId}</TableCell>
+                <TableCell>{row.date}</TableCell>
+                <TableCell>{row.user}</TableCell>
+                <TableCell className="truncate max-w-[260px]">{row.issue}</TableCell>
+                <TableCell><Priority value={row.priority} /></TableCell>
+                <TableCell><Status value={row.status} /></TableCell>
+                <TableCell>{row.assignedTo}</TableCell>
+                <TableCell>
+                  <Button variant="ghost" className="text-black hover:text-black/70 p-0 h-auto" onClick={() => navigate(`/support/${row.ticketId}`)}>
+                    <span>View</span>
+                    <ChevronRight className="h-3 w-3 ml-1" />
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}
@@ -220,18 +195,6 @@ const Support = () => {
         currentPage={currentPage}
         totalPages={8}
         onPageChange={setCurrentPage}
-      />
-
-      <ReassignTicketModal
-        ticket={selectedTicket}
-        isOpen={isReassignModalOpen}
-        onClose={() => setIsReassignModalOpen(false)}
-      />
-
-      <CloseTicketModal
-        ticket={selectedTicket}
-        isOpen={isCloseModalOpen}
-        onClose={() => setIsCloseModalOpen(false)}
       />
     </div>
   );

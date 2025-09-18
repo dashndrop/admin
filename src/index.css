@@ -105,7 +105,8 @@ All colors MUST be HSL.
 
 @layer base {
   * {
-    @apply border-border;
+    /* Avoid Tailwind @apply for border color to prevent class resolution issues */
+    border-color: hsl(var(--border));
   }
 
   body {

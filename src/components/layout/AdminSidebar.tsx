@@ -1,18 +1,7 @@
 import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import {
-  LayoutDashboard,
-  Users,
-  Store,
-  Package,
-  CreditCard,
-  Gift,
-  BarChart3,
-  Shield,
-  Bell,
-  HelpCircle,
-  LogOut,
-} from "lucide-react";
+import { LogOut } from "lucide-react";
+import logoImg from "/img/Frame 624.png";
 import {
   Sidebar,
   SidebarContent,
@@ -26,16 +15,17 @@ import {
 import { Button } from "@/components/ui/button";
 
 const menuItems = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Vendors", url: "/vendors", icon: Store },
-  { title: "Users", url: "/users", icon: Users },
-  { title: "Orders & Deliveries", url: "/orders", icon: Package },
-  { title: "Support Tickets", url: "/support", icon: HelpCircle },
-  { title: "Payment & Finances", url: "/payments", icon: CreditCard },
-  { title: "Loyalty & Rewards", url: "/loyalty", icon: Gift },
-  { title: "Analytics & Reports", url: "/analytics", icon: BarChart3 },
-  { title: "System & Security", url: "/security", icon: Shield },
-  { title: "Notifications", url: "/notifications", icon: Bell },
+  { title: "Dashboard", url: "/" },
+  { title: "Vendors", url: "/vendors" },
+  { title: "Users", url: "/users" },
+  { title: "Riders", url: "/riders" },
+  { title: "Orders & Deliveries", url: "/orders" },
+  { title: "Support Tickets", url: "/support" },
+  { title: "Payment & Finances", url: "/payments" },
+  { title: "Loyalty & Rewards", url: "/loyalty" },
+  { title: "Analytics & Reports", url: "/analytics" },
+  { title: "System & Security", url: "/security" },
+  { title: "Notifications", url: "/notifications" },
 ];
 
 export function AdminSidebar() {
@@ -51,8 +41,8 @@ export function AdminSidebar() {
 
   const getNavClass = (path: string) =>
     isActive(path)
-      ? "bg-primary text-primary-foreground font-medium"
-      : "hover:bg-muted/50 text-muted-foreground hover:text-foreground";
+      ? "relative flex items-center py-4 pl-8 text-[#F28C28] font-medium"
+      : "relative flex items-center py-4 pl-8 text-muted-foreground hover:text-foreground";
 
   return (
     <Sidebar className={collapsed ? "w-14" : "w-64"} collapsible="icon">
@@ -60,27 +50,22 @@ export function AdminSidebar() {
         {/* Logo */}
         <div className="p-6 border-b">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">D</span>
-            </div>
-            {!collapsed && (
-              <span className="font-bold text-xl text-foreground">
-                Dash<span className="text-primary">Drop</span>
-              </span>
-            )}
+            <img src={logoImg} alt="DashDrop" className="h-8" />
           </div>
         </div>
 
         {/* Navigation */}
-        <SidebarGroup className="px-4 py-4">
+        <SidebarGroup className="px-4 py-10">
           <SidebarGroupContent>
-            <SidebarMenu className="space-y-1">
+            <SidebarMenu className="space-y-5">
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink to={item.url} className={getNavClass(item.url)}>
-                      <item.icon className="h-5 w-5" />
-                      {!collapsed && <span className="text-sm">{item.title}</span>}
+                      {isActive(item.url) && (
+                        <span className="absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-6 rounded-full bg-[#F28C28]" />
+                      )}
+                      {!collapsed && <span className="text-base">{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -90,13 +75,14 @@ export function AdminSidebar() {
         </SidebarGroup>
 
         {/* Sign Out */}
-        <div className="mt-auto p-4 border-t">
+        <div className="mt-auto p-6 border-t">
           <Button
-            variant="ghost"
-            className="w-full justify-start text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+            variant="outline"
+            className=" justify-start h-10 rounded-md"
+            style={{ borderColor: '#FF5A3C', color: '#FF5A3C' }}
           >
             <LogOut className="h-5 w-5" />
-            {!collapsed && <span className="text-sm">Sign out</span>}
+            {!collapsed && <span className="text-base">Sign out</span>}
           </Button>
         </div>
       </SidebarContent>

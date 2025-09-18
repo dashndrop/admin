@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowLeft, Filter, ExternalLink, Star, Mail } from "lucide-react";
+import profileIcon from "/img/profile.png";
 
 interface UserDetails {
   id: string;
@@ -131,7 +132,7 @@ export default function UserDetails() {
           <Button className="bg-red-600 hover:bg-red-700 text-white">
             Reset password
           </Button>
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+          <Button className="text-white hover:brightness-110" style={{ backgroundColor: "#003366" }}>
             Send Email
           </Button>
         </div>
@@ -141,9 +142,7 @@ export default function UserDetails() {
       <Card>
         <CardHeader className="pb-4">
           <CardTitle className="flex items-center gap-2 text-lg">
-            <div className="w-6 h-6 bg-primary rounded text-primary-foreground text-sm flex items-center justify-center">
-              👤
-            </div>
+            <img src={profileIcon} alt="Profile" className="w-5 h-5" />
             Profile Information
           </CardTitle>
           <p className="text-sm text-muted-foreground">

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, User, BarChart3, DollarSign, TrendingUp, TrendingDown, Clock, Star, Building2, Mail, Phone } from "lucide-react";
+import profileIcon from "/img/profile.png";
 import { VendorActionModal } from "@/components/vendors/VendorActionModal";
 import { VendorSettingsModal } from "@/components/vendors/VendorSettingsModal";
 
@@ -141,9 +142,7 @@ export default function VendorDetails() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center">
-              <User className="h-4 w-4 text-white" />
-            </div>
+            <img src={profileIcon} alt="Profile" className="w-5 h-5" />
             <div>
               <CardTitle>Profile Information</CardTitle>
               <p className="text-sm text-muted-foreground">Lorem ipsum dolor sit amet, consectetur adipiscing elit</p>

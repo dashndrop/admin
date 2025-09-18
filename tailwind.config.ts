@@ -18,6 +18,11 @@ export default {
 			}
 		},
 		extend: {
+			fontWeight: {
+				medium: '400',
+				semibold: '500',
+				bold: '600',
+			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
