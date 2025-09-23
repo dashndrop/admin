@@ -200,8 +200,8 @@ export function VendorTable({ restaurants, loading }: VendorTableProps) {
     }
   };
 
-  // Use restaurants data or fallback to mock data
-  const displayData = restaurants.length > 0 ? restaurants : expandedVendors;
+  // Use only real restaurants data from API
+  const displayData = restaurants;
   const totalPages = Math.ceil(displayData.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentVendors = displayData.slice(startIndex, startIndex + itemsPerPage);
@@ -246,20 +246,18 @@ export function VendorTable({ restaurants, loading }: VendorTableProps) {
                   onCheckedChange={handleSelectAll}
                 />
               </TableHead>
-              <TableHead>Vendor Name</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Sales Volume</TableHead>
+              <TableHead>Restaurant Name</TableHead>
+              <TableHead>Description</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Phone</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Rating</TableHead>
-              <TableHead>Last Login</TableHead>
-              <TableHead>Joined On</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8">
+                <TableCell colSpan={6} className="text-center py-8">
                   <div className="flex items-center justify-center">
                     <div className="w-6 h-6 border-2 border-[#F28C28] border-t-transparent rounded-full animate-spin mr-2"></div>
                     Loading restaurants...
@@ -268,42 +266,35 @@ export function VendorTable({ restaurants, loading }: VendorTableProps) {
               </TableRow>
             ) : currentVendors.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                   No restaurants found
                 </TableCell>
               </TableRow>
             ) : (
-              currentVendors.map((vendor) => (
-                <TableRow key={vendor.id}>
+              currentVendors.map((restaurant) => (
+                <TableRow key={restaurant.id}>
                   <TableCell>
                     <Checkbox
-                      checked={selectedVendors.includes(vendor.id)}
-                      onCheckedChange={() => handleSelectVendor(vendor.id)}
+                      checked={selectedVendors.includes(restaurant.id)}
+                      onCheckedChange={() => handleSelectVendor(restaurant.id)}
                     />
                   </TableCell>
-                  <TableCell className="font-medium">{vendor.name}</TableCell>
-                  <TableCell>{vendor.category}</TableCell>
-                  <TableCell>{vendor.salesVolume || vendor.revenue}</TableCell>
+                  <TableCell className="font-medium">{restaurant.name}</TableCell>
+                  <TableCell>{restaurant.description}</TableCell>
+                  <TableCell>{restaurant.email}</TableCell>
+                  <TableCell>{restaurant.phone}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <div className={`w-2 h-2 rounded-full ${getStatusColor(vendor.status)}`} />
-                      <span className="text-sm">{vendor.status}</span>
+                      <div className={`w-2 h-2 rounded-full ${restaurant.isOpen ? 'bg-green-500' : 'bg-red-500'}`} />
+                      <span className="text-sm">{restaurant.isOpen ? 'Open' : 'Closed'}</span>
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      <span>{vendor.rating}</span>
-                      <span className="text-yellow-500">★</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>{vendor.lastLogin}</TableCell>
-                  <TableCell>{vendor.joinedOn}</TableCell>
                   <TableCell>
                     <Button 
                       variant="ghost" 
                       size="sm"
                       className="text-muted-foreground hover:text-foreground"
-                      onClick={() => window.location.href = `/vendors/${vendor.id}`}
+                      onClick={() => window.location.href = `/vendors/${restaurant.id}`}
                     >
                       View
                       <ChevronRight className="h-4 w-4 ml-1" />

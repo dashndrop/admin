@@ -8,41 +8,25 @@ export const apiServices = {
       const response = await api.request('/restaurants/all');
       console.log('API Response:', response);
       
-      // Map API data to UI format
+      // Map API data to UI format - ONLY use fields that exist in API response
       const restaurants = (response.restaurants || response || []).map((restaurant: any) => ({
         id: restaurant.id,
         name: restaurant.name,
-        category: restaurant.category || "Restaurant", // Default category
-        status: restaurant.is_open ? "Active" : "Suspended",
-        salesVolume: restaurant.revenue || "₦0.00", // Default revenue
-        rating: restaurant.rating || 4.0, // Default rating
-        lastLogin: restaurant.last_login || new Date().toLocaleDateString(),
-        joinedOn: restaurant.created_at ? new Date(restaurant.created_at).toLocaleDateString() : new Date().toLocaleDateString(),
+        description: restaurant.description,
         email: restaurant.email,
         phone: restaurant.phone_number,
-        description: restaurant.description,
-        isOpen: restaurant.is_open
+        isOpen: restaurant.is_open,
+        coverImage: restaurant.cover_image_url,
+        locations: restaurant.locations,
+        operatingHours: restaurant.operating_hours
       }));
       
       console.log('Mapped restaurants:', restaurants);
       return restaurants;
     } catch (error) {
       console.error('Failed to fetch restaurants:', error);
-      // Return mock data as fallback
-      return [
-        {
-          id: "V-101",
-          name: "Chicken Republic - Ikeja",
-          category: "Food & Beverages",
-          status: "Active",
-          orders: 1250,
-          revenue: "₦2,500,000",
-          rating: 4.5,
-          location: "Ikeja, Lagos",
-          lastLogin: "30/06/2025",
-          joinedOn: "30/06/2025"
-        }
-      ];
+      // Return empty array if API fails
+      return [];
     }
   },
 
