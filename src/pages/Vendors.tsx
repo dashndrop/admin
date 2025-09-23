@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { VendorTable } from "@/components/vendors/VendorTable";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 import { apiServices } from "@/lib/api-services";
 
 export default function Vendors() {
@@ -52,6 +54,10 @@ export default function Vendors() {
             Manage restaurants (vendors) and their profiles
           </p>
         </div>
+        <Button className="bg-[#F28C28] hover:bg-[#F28C28]/90 text-white">
+          <Plus className="h-4 w-4 mr-2" />
+          Add New Restaurant
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

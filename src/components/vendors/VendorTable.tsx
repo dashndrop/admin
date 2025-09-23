@@ -200,8 +200,20 @@ export function VendorTable({ restaurants, loading }: VendorTableProps) {
     }
   };
 
-  // Use only real restaurants data from API
-  const displayData = restaurants;
+  // Filter restaurants based on search term
+  const filteredRestaurants = restaurants.filter((restaurant: any) => {
+    if (!searchTerm) return true;
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      restaurant.name.toLowerCase().includes(searchLower) ||
+      restaurant.email.toLowerCase().includes(searchLower) ||
+      restaurant.phone.toLowerCase().includes(searchLower) ||
+      restaurant.description.toLowerCase().includes(searchLower)
+    );
+  });
+
+  // Use filtered data
+  const displayData = filteredRestaurants;
   const totalPages = Math.ceil(displayData.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentVendors = displayData.slice(startIndex, startIndex + itemsPerPage);
