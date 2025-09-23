@@ -153,7 +153,12 @@ const expandedVendors: Vendor[] = [
   },
 ];
 
-export function VendorTable() {
+interface VendorTableProps {
+  restaurants: any[];
+  loading: boolean;
+}
+
+export function VendorTable({ restaurants, loading }: VendorTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
   const [actionType, setActionType] = useState<"approve" | "reject" | "suspend" | null>(null);
@@ -188,16 +193,22 @@ export function VendorTable() {
   };
 
   const handleSelectAll = () => {
-    if (selectedVendors.length === expandedVendors.length) {
+    if (selectedVendors.length === restaurants.length) {
       setSelectedVendors([]);
     } else {
-      setSelectedVendors(expandedVendors.map(vendor => vendor.id));
+      setSelectedVendors(restaurants.map((restaurant: any) => restaurant.id));
     }
   };
 
-  const totalPages = Math.ceil(expandedVendors.length / itemsPerPage);
+  // Use restaurants data or fallback to mock data
+  const displayData = restaurants.length > 0 ? restaurants : expandedVendors;
+  const totalPages = Math.ceil(displayData.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const currentVendors = expandedVendors.slice(startIndex, startIndex + itemsPerPage);
+  const currentVendors = displayData.slice(startIndex, startIndex + itemsPerPage);
+  
+  console.log('VendorTable - restaurants:', restaurants);
+  console.log('VendorTable - displayData:', displayData);
+  console.log('VendorTable - currentVendors:', currentVendors);
 
   return (
     <div className="space-y-4">
@@ -231,7 +242,7 @@ export function VendorTable() {
             <TableRow>
               <TableHead className="w-12">
                 <Checkbox
-                  checked={selectedVendors.length === expandedVendors.length}
+                  checked={selectedVendors.length === displayData.length}
                   onCheckedChange={handleSelectAll}
                 />
               </TableHead>
@@ -246,44 +257,61 @@ export function VendorTable() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {currentVendors.map((vendor) => (
-              <TableRow key={vendor.id}>
-                <TableCell>
-                  <Checkbox
-                    checked={selectedVendors.includes(vendor.id)}
-                    onCheckedChange={() => handleSelectVendor(vendor.id)}
-                  />
-                </TableCell>
-                <TableCell className="font-medium">{vendor.name}</TableCell>
-                <TableCell>{vendor.category}</TableCell>
-                <TableCell>{vendor.salesVolume}</TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${getStatusColor(vendor.status)}`} />
-                    <span className="text-sm">{vendor.status}</span>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={8} className="text-center py-8">
+                  <div className="flex items-center justify-center">
+                    <div className="w-6 h-6 border-2 border-[#F28C28] border-t-transparent rounded-full animate-spin mr-2"></div>
+                    Loading restaurants...
                   </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1">
-                    <span>{vendor.rating}</span>
-                    <span className="text-yellow-500">★</span>
-                  </div>
-                </TableCell>
-                <TableCell>{vendor.lastLogin}</TableCell>
-                <TableCell>{vendor.joinedOn}</TableCell>
-                <TableCell>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    className="text-muted-foreground hover:text-foreground"
-                    onClick={() => window.location.href = `/vendors/${vendor.id}`}
-                  >
-                    View
-                    <ChevronRight className="h-4 w-4 ml-1" />
-                  </Button>
                 </TableCell>
               </TableRow>
-            ))}
+            ) : currentVendors.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                  No restaurants found
+                </TableCell>
+              </TableRow>
+            ) : (
+              currentVendors.map((vendor) => (
+                <TableRow key={vendor.id}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedVendors.includes(vendor.id)}
+                      onCheckedChange={() => handleSelectVendor(vendor.id)}
+                    />
+                  </TableCell>
+                  <TableCell className="font-medium">{vendor.name}</TableCell>
+                  <TableCell>{vendor.category}</TableCell>
+                  <TableCell>{vendor.salesVolume || vendor.revenue}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full ${getStatusColor(vendor.status)}`} />
+                      <span className="text-sm">{vendor.status}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <span>{vendor.rating}</span>
+                      <span className="text-yellow-500">★</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>{vendor.lastLogin}</TableCell>
+                  <TableCell>{vendor.joinedOn}</TableCell>
+                  <TableCell>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      className="text-muted-foreground hover:text-foreground"
+                      onClick={() => window.location.href = `/vendors/${vendor.id}`}
+                    >
+                      View
+                      <ChevronRight className="h-4 w-4 ml-1" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>

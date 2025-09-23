@@ -1,45 +1,175 @@
 import { api } from './api';
 
-// Generic API service functions
+// Restaurant/Vendor API service functions
 export const apiServices = {
-  // Vendors
-  async getVendors() {
-    // This would be implemented when vendor endpoints are available
-    return [
-      {
-        id: "V-101",
+  // Restaurants (Vendors)
+  async getRestaurants() {
+    try {
+      const response = await api.request('/restaurants/all');
+      console.log('API Response:', response);
+      
+      // Map API data to UI format
+      const restaurants = (response.restaurants || response || []).map((restaurant: any) => ({
+        id: restaurant.id,
+        name: restaurant.name,
+        category: restaurant.category || "Restaurant", // Default category
+        status: restaurant.is_open ? "Active" : "Suspended",
+        salesVolume: restaurant.revenue || "₦0.00", // Default revenue
+        rating: restaurant.rating || 4.0, // Default rating
+        lastLogin: restaurant.last_login || new Date().toLocaleDateString(),
+        joinedOn: restaurant.created_at ? new Date(restaurant.created_at).toLocaleDateString() : new Date().toLocaleDateString(),
+        email: restaurant.email,
+        phone: restaurant.phone_number,
+        description: restaurant.description,
+        isOpen: restaurant.is_open
+      }));
+      
+      console.log('Mapped restaurants:', restaurants);
+      return restaurants;
+    } catch (error) {
+      console.error('Failed to fetch restaurants:', error);
+      // Return mock data as fallback
+      return [
+        {
+          id: "V-101",
+          name: "Chicken Republic - Ikeja",
+          category: "Food & Beverages",
+          status: "Active",
+          orders: 1250,
+          revenue: "₦2,500,000",
+          rating: 4.5,
+          location: "Ikeja, Lagos",
+          lastLogin: "30/06/2025",
+          joinedOn: "30/06/2025"
+        }
+      ];
+    }
+  },
+
+  async getRestaurant(id: string) {
+    try {
+      const response = await api.request(`/restaurants/profile?restaurant_id=${id}`);
+      return response;
+    } catch (error) {
+      console.error('Failed to fetch restaurant:', error);
+      // Return mock data as fallback
+      return {
+        id,
         name: "Chicken Republic - Ikeja",
         category: "Food & Beverages",
         status: "Active",
-        orders: 1250,
-        revenue: "₦2,500,000",
-        rating: 4.5,
-        location: "Ikeja, Lagos"
-      },
-      // Add more mock data as needed
-    ];
+        businessName: "Chicken Republic Nigeria Ltd",
+        vendorId: "V-101",
+        businessAddress: "123 Allen Avenue, Ikeja, Lagos",
+        contactPerson: "John Doe",
+        email: "john@chickenrepublic.com",
+        phone: "+234 802 123 4567",
+        registrationDate: "2023-01-15",
+        lastActive: "2024-01-15",
+        totalOrders: 1250,
+        totalRevenue: "₦2,500,000",
+        averageRating: 4.5,
+        documents: ["Certificate & Licenses"]
+      };
+    }
   },
 
-  async getVendor(id: string) {
-    // Mock vendor data
-    return {
-      id,
-      name: "Chicken Republic - Ikeja",
-      category: "Food & Beverages",
-      status: "Active",
-      businessName: "Chicken Republic Nigeria Ltd",
-      vendorId: "V-101",
-      businessAddress: "123 Allen Avenue, Ikeja, Lagos",
-      contactPerson: "John Doe",
-      email: "john@chickenrepublic.com",
-      phone: "+234 802 123 4567",
-      registrationDate: "2023-01-15",
-      lastActive: "2024-01-15",
-      totalOrders: 1250,
-      totalRevenue: "₦2,500,000",
-      averageRating: 4.5,
-      documents: ["Certificate & Licenses"]
-    };
+  async getRestaurantMenu(restaurantId: string) {
+    try {
+      const response = await api.request(`/restaurants/${restaurantId}/menu`);
+      return response.menu_items || [];
+    } catch (error) {
+      console.error('Failed to fetch restaurant menu:', error);
+      return [];
+    }
+  },
+
+  async createRestaurant(data: any) {
+    try {
+      const response = await api.request('/restaurants/new', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      });
+      return response;
+    } catch (error) {
+      console.error('Failed to create restaurant:', error);
+      throw error;
+    }
+  },
+
+  async updateRestaurant(restaurantId: string, data: any) {
+    try {
+      const response = await api.request(`/restaurants/${restaurantId}/profile`, {
+        method: 'PATCH',
+        body: JSON.stringify(data)
+      });
+      return response;
+    } catch (error) {
+      console.error('Failed to update restaurant:', error);
+      throw error;
+    }
+  },
+
+  async deleteRestaurant(restaurantId: string) {
+    try {
+      const response = await api.request(`/restaurants/${restaurantId}/profile`, {
+        method: 'DELETE'
+      });
+      return response;
+    } catch (error) {
+      console.error('Failed to delete restaurant:', error);
+      throw error;
+    }
+  },
+
+  // Menu Management
+  async createMenuItem(restaurantId: string, data: any) {
+    try {
+      const response = await api.request(`/restaurants/${restaurantId}/menu`, {
+        method: 'POST',
+        body: JSON.stringify(data)
+      });
+      return response;
+    } catch (error) {
+      console.error('Failed to create menu item:', error);
+      throw error;
+    }
+  },
+
+  async updateMenuItem(itemId: string, data: any) {
+    try {
+      const response = await api.request(`/restaurants/menu/${itemId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data)
+      });
+      return response;
+    } catch (error) {
+      console.error('Failed to update menu item:', error);
+      throw error;
+    }
+  },
+
+  async deleteMenuItem(itemId: string) {
+    try {
+      const response = await api.request(`/restaurants/menu/${itemId}`, {
+        method: 'DELETE'
+      });
+      return response;
+    } catch (error) {
+      console.error('Failed to delete menu item:', error);
+      throw error;
+    }
+  },
+
+  // Search & Filter
+  async searchRestaurantsByCategory(category: string) {
+    try {
+      const response = await api.request(`/restaurants/search/by-categories?category=${category}`);
+      return response.restaurants || [];
+    } catch (error) {
+      console.error('Failed to search restaurants by category:', error);
+      return [];
+    }
   },
 
   // Users

@@ -1,7 +1,46 @@
+import { useState, useEffect } from "react";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { VendorTable } from "@/components/vendors/VendorTable";
+import { apiServices } from "@/lib/api-services";
 
 export default function Vendors() {
+  const [restaurants, setRestaurants] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    total: 0,
+    pending: 0,
+    suspended: 0,
+    revenue: "₦0"
+  });
+
+  useEffect(() => {
+    const fetchRestaurants = async () => {
+      try {
+        setLoading(true);
+        const data = await apiServices.getRestaurants();
+        setRestaurants(data);
+        
+        // Calculate stats from the data
+        console.log('Calculating stats for:', data);
+        setStats({
+          total: data.length,
+          pending: data.filter((r: any) => r.status === 'Pending Approval').length,
+          suspended: data.filter((r: any) => r.status === 'Suspended').length,
+          revenue: data.reduce((sum: number, r: any) => {
+            const revenue = parseFloat(r.salesVolume?.replace(/[₦,]/g, '') || 0);
+            return sum + revenue;
+          }, 0).toLocaleString('en-NG', { style: 'currency', currency: 'NGN' })
+        });
+      } catch (error) {
+        console.error('Failed to fetch restaurants:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRestaurants();
+  }, []);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -10,34 +49,38 @@ export default function Vendors() {
             <span className="w-6 h-6 bg-primary rounded text-primary-foreground text-sm flex items-center justify-center">
               V
             </span>
-            Vendor Management
+            Restaurant Management
           </h1>
           <p className="text-muted-foreground mt-1">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit
+            Manage restaurants (vendors) and their profiles
           </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatsCard
-          title="All Vendors"
-          value="5000"
+          title="All Restaurants"
+          value={stats.total.toString()}
+          loading={loading}
         />
         <StatsCard
-          title="Pending Vendors"
-          value="50"
+          title="Pending Restaurants"
+          value={stats.pending.toString()}
+          loading={loading}
         />
         <StatsCard
-          title="Suspended vendors"
-          value="50"
+          title="Suspended Restaurants"
+          value={stats.suspended.toString()}
+          loading={loading}
         />
         <StatsCard
           title="Total Revenue"
-          value="₦30.5M"
+          value={stats.revenue}
+          loading={loading}
         />
       </div>
 
-      <VendorTable />
+      <VendorTable restaurants={restaurants} loading={loading} />
     </div>
   );
 }
