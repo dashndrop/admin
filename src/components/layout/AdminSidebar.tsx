@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
-import { LogOut } from "lucide-react";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { LogOut, User } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import logoImg from "/img/Frame 624.png";
 import {
   Sidebar,
@@ -15,7 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 
 const menuItems = [
-  { title: "Dashboard", url: "/" },
+  // { title: "Dashboard", url: "/" },
   { title: "Vendors", url: "/vendors" },
   { title: "Users", url: "/users" },
   { title: "Riders", url: "/riders" },
@@ -31,6 +32,8 @@ const menuItems = [
 export function AdminSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
   const currentPath = location.pathname;
   const collapsed = state === "collapsed";
 
@@ -80,6 +83,10 @@ export function AdminSidebar() {
             variant="outline"
             className=" justify-start h-10 rounded-md"
             style={{ borderColor: '#FF5A3C', color: '#FF5A3C' }}
+            onClick={() => {
+              logout();
+              navigate('/login');
+            }}
           >
             <LogOut className="h-5 w-5" />
             {!collapsed && <span className="text-base">Sign out</span>}
