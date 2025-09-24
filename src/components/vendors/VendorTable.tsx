@@ -21,6 +21,7 @@ import {
 import { apiServices } from "@/lib/api-services";
 import { useToast } from "@/components/ui/use-toast";
 import { VendorActionModal } from "./VendorActionModal";
+import { ConfirmDialog } from "./ConfirmDialog";
 import { PaginationControls } from "@/components/ui/pagination-controls";
 
 interface Vendor {
@@ -181,6 +182,13 @@ export function VendorTable({ vendors = [], onRefresh }: VendorTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedVendors, setSelectedVendors] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState({
+    open: false,
+    title: "",
+    description: "",
+    action: () => {},
+    variant: "default" as "default" | "destructive"
+  });
   const itemsPerPage = 10;
   const { toast } = useToast();
 
@@ -236,10 +244,6 @@ export function VendorTable({ vendors = [], onRefresh }: VendorTableProps) {
   };
 
   const handleDeleteRestaurant = async (restaurantId: string) => {
-    if (!confirm("Are you sure you want to delete this restaurant? This action cannot be undone.")) {
-      return;
-    }
-    
     setIsLoading(true);
     try {
       await apiServices.deleteRestaurant(restaurantId);
@@ -253,6 +257,36 @@ export function VendorTable({ vendors = [], onRefresh }: VendorTableProps) {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const openDeleteConfirmation = (restaurant: Vendor) => {
+    setConfirmDialog({
+      open: true,
+      title: "Delete Restaurant",
+      description: `Are you sure you want to delete "${restaurant.name}"? This action cannot be undone.`,
+      action: () => handleDeleteRestaurant(restaurant.id),
+      variant: "destructive"
+    });
+  };
+
+  const openSuspendConfirmation = (restaurant: Vendor) => {
+    setConfirmDialog({
+      open: true,
+      title: "Suspend Restaurant",
+      description: `Are you sure you want to suspend "${restaurant.name}"? This will prevent them from receiving new orders.`,
+      action: () => handleSuspendRestaurant(restaurant.id),
+      variant: "default"
+    });
+  };
+
+  const openApproveConfirmation = (restaurant: Vendor) => {
+    setConfirmDialog({
+      open: true,
+      title: "Approve Restaurant",
+      description: `Are you sure you want to approve "${restaurant.name}"? This will allow them to receive orders.`,
+      action: () => handleApproveRestaurant(restaurant.id),
+      variant: "default"
+    });
   };
 
   const handleSelectVendor = (vendorId: string) => {
@@ -383,7 +417,7 @@ export function VendorTable({ vendors = [], onRefresh }: VendorTableProps) {
                       <DropdownMenuSeparator />
                       {vendor.status === "Active" ? (
                         <DropdownMenuItem 
-                          onClick={() => handleSuspendRestaurant(vendor.id)}
+                          onClick={() => openSuspendConfirmation(vendor)}
                           disabled={isLoading}
                         >
                           <Pause className="mr-2 h-4 w-4" />
@@ -391,7 +425,7 @@ export function VendorTable({ vendors = [], onRefresh }: VendorTableProps) {
                         </DropdownMenuItem>
                       ) : (
                         <DropdownMenuItem 
-                          onClick={() => handleApproveRestaurant(vendor.id)}
+                          onClick={() => openApproveConfirmation(vendor)}
                           disabled={isLoading}
                         >
                           <Play className="mr-2 h-4 w-4" />
@@ -400,7 +434,7 @@ export function VendorTable({ vendors = [], onRefresh }: VendorTableProps) {
                       )}
                       <DropdownMenuSeparator />
                       <DropdownMenuItem 
-                        onClick={() => handleDeleteRestaurant(vendor.id)}
+                        onClick={() => openDeleteConfirmation(vendor)}
                         disabled={isLoading}
                         className="text-red-600 focus:text-red-600"
                       >
@@ -439,6 +473,17 @@ export function VendorTable({ vendors = [], onRefresh }: VendorTableProps) {
           }}
         />
       )}
+
+      <ConfirmDialog
+        open={confirmDialog.open}
+        onOpenChange={(open) => setConfirmDialog(prev => ({ ...prev, open }))}
+        title={confirmDialog.title}
+        description={confirmDialog.description}
+        confirmText={confirmDialog.variant === "destructive" ? "Delete" : "Confirm"}
+        variant={confirmDialog.variant}
+        onConfirm={confirmDialog.action}
+        loading={isLoading}
+      />
     </div>
   );
 }

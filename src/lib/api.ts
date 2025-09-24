@@ -154,7 +154,7 @@ class ApiClient {
   }
 
   async getRestaurant(id: string) {
-    return this.request(`/admin/restaurants/${id}`);
+    return this.request(`/admin/restaurant/${id}`);
   }
 
   // Restaurant Management Actions
