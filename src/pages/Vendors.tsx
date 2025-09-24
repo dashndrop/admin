@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { VendorTable } from "@/components/vendors/VendorTable";
 import { apiServices } from "@/lib/api-services";
-import vendorsIcon from "/img/vendors.png";
+import { Store } from "lucide-react";
 
 export default function Vendors() {
   const [vendors, setVendors] = useState([]);
@@ -65,7 +65,9 @@ export default function Vendors() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <img src={vendorsIcon} alt="Vendors" className="w-6 h-6" />
+            <div className="w-8 h-8 bg-gray-900 rounded-md flex items-center justify-center">
+              <Store className="h-4 w-4 text-white" />
+            </div>
             Vendor Management
           </h1>
           <p className="text-muted-foreground mt-1">
