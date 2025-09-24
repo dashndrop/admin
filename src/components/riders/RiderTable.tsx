@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Search, Filter, ArrowUpDown, ChevronRight, Star } from "lucide-react";
+import { Search, Filter, ArrowUpDown, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { PaginationControls } from "@/components/ui/pagination-controls";
 import { apiServices } from "@/lib/api-services";
@@ -13,13 +13,10 @@ import { apiServices } from "@/lib/api-services";
 interface Rider {
   id: string;
   name: string;
-  riderId: string;
-  zone: string;
-  status: "Active" | "Suspended" | "Pending verification";
-  completedOrders: number;
-  avgDeliveryTime: string;
-  rating: string;
-  lastLogin: string;
+  email: string;
+  phone: string;
+  status: "Active" | "Suspended";
+  vehicleType: string;
 }
 
 export function RiderTable() {
@@ -37,19 +34,18 @@ export function RiderTable() {
   const riders: Rider[] = (apiRiders as any[]).map((r: any) => ({
     id: r.id,
     name: r.name ?? "",
-    riderId: r.id ?? r.riderId ?? "",
-    zone: r.zone ?? "-",
-    status: (r.status === "Suspended" ? "Suspended" : r.status === "Pending verification" ? "Pending verification" : "Active") as Rider["status"],
-    completedOrders: r.totalDeliveries ?? r.completed_orders ?? 0,
-    avgDeliveryTime: r.averageDeliveryTime ?? r.avg_delivery_time ?? "-",
-    rating: typeof r.rating === "number" ? `${r.rating} ★` : r.rating ?? "-",
-    lastLogin: r.last_login ?? r.joinDate ?? "-",
+    email: r.email ?? "",
+    phone: r.phone ?? "",
+    status: (r.status === "Suspended" ? "Suspended" : "Active") as Rider["status"],
+    vehicleType: r.vehicleType ?? "-",
   }));
 
   const query = (searchTerm || "").toLowerCase();
   const filtered = riders.filter(r =>
     (r.name || "").toLowerCase().includes(query) ||
-    (r.riderId || "").toLowerCase().includes(query)
+    (r.id || "").toLowerCase().includes(query) ||
+    (r.email || "").toLowerCase().includes(query) ||
+    (r.phone || "").toLowerCase().includes(query)
   );
 
   const pageSize = 10;
@@ -57,7 +53,7 @@ export function RiderTable() {
   const pageItems = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const statusDot = (status: Rider["status"]) => {
-    const color = status === "Active" ? "bg-green-500" : status === "Suspended" ? "bg-red-500" : "bg-yellow-500";
+    const color = status === "Active" ? "bg-green-500" : "bg-red-500";
     return <div className={`w-2 h-2 rounded-full ${color}`} />;
   };
 
@@ -110,12 +106,10 @@ export function RiderTable() {
             </TableHead>
             <TableHead>Rider Name</TableHead>
             <TableHead>ID</TableHead>
-            <TableHead>Zone</TableHead>
+            <TableHead>Phone</TableHead>
+            <TableHead>Email</TableHead>
+            <TableHead>Vehicle Type</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Completed Orders</TableHead>
-            <TableHead>Avg Delivery Time</TableHead>
-            <TableHead>Rating</TableHead>
-            <TableHead>Last Login</TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -126,21 +120,15 @@ export function RiderTable() {
                 <Checkbox className="h-4 w-4" />
               </TableCell>
               <TableCell>{rider.name}</TableCell>
-              <TableCell>{rider.riderId}</TableCell>
-              <TableCell>{rider.zone}</TableCell>
+              <TableCell>{rider.phone || '-'}</TableCell>
+              <TableCell>{rider.email || '-'}</TableCell>
+              <TableCell>{rider.vehicleType || '-'}</TableCell>
               <TableCell>
                 <div className="flex items-center gap-2">
                   {statusDot(rider.status)}
                   <span>{rider.status}</span>
                 </div>
               </TableCell>
-              <TableCell>{rider.completedOrders}</TableCell>
-              <TableCell>{rider.avgDeliveryTime}</TableCell>
-              <TableCell className="flex items-center gap-1">
-                <Star className="h-3 w-3 text-yellow-500 fill-current" />
-                {rider.rating}
-              </TableCell>
-              <TableCell>{rider.lastLogin}</TableCell>
               <TableCell>
                 <Button variant="ghost" className="flex items-center gap-1 text-black hover:text-black/70 p-0 h-auto" onClick={() => navigate(`/riders/${rider.id}`)}>
                   View

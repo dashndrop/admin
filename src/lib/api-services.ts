@@ -187,16 +187,17 @@ export const apiServices = {
       // If backend returns pagination structure, normalize list
       const list = Array.isArray(response) ? response : response.items || response.results || [];
       return list.map((rider: any) => ({
-        id: rider.id ?? rider.rider_id,
-        name: rider.name,
-        email: rider.email,
-        phone: rider.phone_number ?? rider.phone,
-        status: rider.status ?? (rider.is_suspended ? 'Suspended' : 'Active'),
-        vehicleType: rider.vehicle_type ?? rider.vehicleType,
-        zone: rider.zone ?? rider.area,
+        id: rider._id ?? rider.id ?? rider.rider_id,
+        name: rider.full_name ?? rider.name ?? '',
+        email: rider.email ?? '',
+        phone: rider.phone_number ?? rider.phone ?? '',
+        status: rider.is_suspended ? 'Suspended' : 'Active',
+        vehicleType: rider.vehicle_type ?? rider.vehicleType ?? '-',
+        zone: rider.area_of_operation ?? rider.zone ?? rider.area ?? '-',
         totalDeliveries: rider.total_deliveries ?? rider.completed_orders ?? 0,
         rating: rider.rating ?? rider.customer_rating ?? 0,
-        joinDate: rider.join_date ?? rider.created_at,
+        joinDate: rider.created_at ?? rider.join_date,
+        last_login: rider.updated_at ?? rider.last_login,
       }));
     } catch (error) {
       console.error('Failed to fetch riders:', error);
