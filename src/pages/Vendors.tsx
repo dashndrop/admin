@@ -24,18 +24,14 @@ export default function Vendors() {
         
         // Calculate stats from vendor data
         const activeVendors = vendorData.filter((v: any) => v.status === "Active").length;
-        const suspendedVendors = vendorData.filter((v: any) => v.status === "Inactive").length;
-        const totalRevenue = vendorData.reduce((sum: number, v: any) => {
-          const revenue = typeof v.revenue === 'string' ? 
-            parseFloat(v.revenue.replace(/[₦,]/g, '')) : v.revenue;
-          return sum + (revenue || 0);
-        }, 0);
+        const inactiveVendors = vendorData.filter((v: any) => v.status === "Inactive").length;
+        const totalLocations = vendorData.reduce((sum: number, v: any) => sum + (v.locations?.length || 0), 0);
 
         setStats({
           allVendors: vendorData.length,
-          pendingVendors: 0, // We might need a separate API for pending
-          suspendedVendors: suspendedVendors,
-          totalRevenue: `₦${totalRevenue.toLocaleString()}`
+          pendingVendors: 0, // No pending status in current API
+          suspendedVendors: inactiveVendors,
+          totalRevenue: `${totalLocations} Locations` // Show total locations instead of revenue
         });
       } catch (error) {
         console.error('Failed to fetch vendors:', error);
@@ -90,7 +86,7 @@ export default function Vendors() {
           value={stats.suspendedVendors.toString()}
         />
         <StatsCard
-          title="Total Revenue"
+          title="Total Locations"
           value={stats.totalRevenue}
         />
       </div>

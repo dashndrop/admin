@@ -10,18 +10,22 @@ export const apiServices = {
       
       // Transform API response to match our UI expectations
       return restaurants.map((restaurant: any) => ({
-        id: restaurant._id || restaurant.id,
-        name: restaurant.restaurant_name || restaurant.name,
-        category: restaurant.category || "Food & Beverages",
-        status: restaurant.is_active ? "Active" : "Inactive",
-        orders: restaurant.total_orders || 0,
-        revenue: restaurant.total_revenue ? `₦${restaurant.total_revenue.toLocaleString()}` : "₦0",
-        rating: restaurant.average_rating || 0,
-        location: restaurant.location?.address || restaurant.address || "N/A",
+        id: restaurant.id,
+        name: restaurant.name,
+        description: restaurant.description,
         email: restaurant.email,
         phone: restaurant.phone_number,
+        status: restaurant.is_open ? "Active" : "Inactive",
+        category: "Food & Beverages", // Default since not in API response
+        locations: restaurant.locations || [],
+        operating_hours: restaurant.operating_hours || [],
+        cover_image_url: restaurant.cover_image_url,
         created_at: restaurant.created_at,
-        updated_at: restaurant.updated_at
+        updated_at: restaurant.updated_at,
+        // For display purposes
+        revenue: "₦0", // Not available in API
+        rating: 0, // Not available in API
+        orders: 0 // Not available in API
       }));
     } catch (error) {
       console.error('Failed to fetch restaurants:', error);

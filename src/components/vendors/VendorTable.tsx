@@ -10,23 +10,32 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Search, Filter, ArrowUpDown, ChevronRight } from "lucide-react";
+import { Search, Filter, ArrowUpDown, ChevronRight, MoreHorizontal, Eye, Pause, Play } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { VendorActionModal } from "./VendorActionModal";
 import { PaginationControls } from "@/components/ui/pagination-controls";
 
 interface Vendor {
   id: string;
   name: string;
-  category: string;
+  description: string;
+  email: string;
+  phone: string;
   status: string;
-  orders?: number;
-  revenue?: string;
-  rating: number;
-  location?: string;
-  email?: string;
-  phone?: string;
+  category: string;
+  locations: any[];
+  operating_hours: any[];
+  cover_image_url?: string;
   created_at?: string;
   updated_at?: string;
+  revenue?: string;
+  rating?: number;
+  orders?: number;
 }
 
 const vendors: Vendor[] = [
@@ -262,12 +271,11 @@ export function VendorTable({ vendors = [] }: VendorTableProps) {
                 />
               </TableHead>
               <TableHead>Vendor Name</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Revenue</TableHead>
+              <TableHead>Description</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Phone</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Rating</TableHead>
-              <TableHead>Location</TableHead>
-              <TableHead>Created On</TableHead>
+              <TableHead>Locations</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -281,8 +289,11 @@ export function VendorTable({ vendors = [] }: VendorTableProps) {
                   />
                 </TableCell>
                 <TableCell className="font-medium">{vendor.name}</TableCell>
-                <TableCell>{vendor.category}</TableCell>
-                <TableCell>{vendor.revenue || "₦0"}</TableCell>
+                <TableCell className="max-w-[200px] truncate" title={vendor.description}>
+                  {vendor.description}
+                </TableCell>
+                <TableCell>{vendor.email}</TableCell>
+                <TableCell>{vendor.phone}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <div className={`w-2 h-2 rounded-full ${getStatusColor(vendor.status)}`} />
@@ -290,28 +301,44 @@ export function VendorTable({ vendors = [] }: VendorTableProps) {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <div className="flex items-center gap-1">
-                    <span>{vendor.rating || 0}</span>
-                    <span className="text-yellow-500">★</span>
-                  </div>
+                  <span className="text-sm">
+                    {vendor.locations.length > 0 ? `${vendor.locations.length} location(s)` : "No locations"}
+                  </span>
                 </TableCell>
-                <TableCell>{vendor.location || "N/A"}</TableCell>
-                <TableCell>{formatDate(vendor.created_at)}</TableCell>
                 <TableCell>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    className="text-muted-foreground hover:text-foreground"
-                    onClick={() => window.location.href = `/vendors/${vendor.id}`}
-                  >
-                    View
-                    <ChevronRight className="h-4 w-4 ml-1" />
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => window.location.href = `/vendors/${vendor.id}`}>
+                        <Eye className="mr-2 h-4 w-4" />
+                        View Details
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => handleAction(vendor, vendor.status === "Active" ? "suspend" : "approve")}
+                      >
+                        {vendor.status === "Active" ? (
+                          <>
+                            <Pause className="mr-2 h-4 w-4" />
+                            Suspend
+                          </>
+                        ) : (
+                          <>
+                            <Play className="mr-2 h-4 w-4" />
+                            Activate
+                          </>
+                        )}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </TableCell>
               </TableRow>
             )) : (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                   No vendors found
                 </TableCell>
               </TableRow>
