@@ -147,6 +147,15 @@ class ApiClient {
   isAuthenticated(): boolean {
     return !!this.token;
   }
+
+  // Admin Endpoints
+  async getRestaurants() {
+    return this.request('/admin/restaurants');
+  }
+
+  async getRestaurant(id: string) {
+    return this.request(`/admin/restaurants/${id}`);
+  }
 }
 
 // Create API instance

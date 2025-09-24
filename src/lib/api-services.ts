@@ -1,159 +1,66 @@
 import { api } from './api';
 
-// Restaurant/Vendor API service functions
+// Generic API service functions
 export const apiServices = {
-  // Restaurants (Vendors)
-  async getRestaurants() {
+  // Vendors
+  async getVendors() {
     try {
-      const response = await api.request('/restaurants/all');
-      console.log('API Response:', response);
+      const restaurants = await api.getRestaurants();
+      console.log('Fetched restaurants from API:', restaurants);
       
-      // Map API data to UI format - ONLY use fields that exist in API response
-      const restaurants = (response.restaurants || response || []).map((restaurant: any) => ({
-        id: restaurant.id,
-        name: restaurant.name,
-        description: restaurant.description,
+      // Transform API response to match our UI expectations
+      return restaurants.map((restaurant: any) => ({
+        id: restaurant._id || restaurant.id,
+        name: restaurant.restaurant_name || restaurant.name,
+        category: restaurant.category || "Food & Beverages",
+        status: restaurant.is_active ? "Active" : "Inactive",
+        orders: restaurant.total_orders || 0,
+        revenue: restaurant.total_revenue ? `₦${restaurant.total_revenue.toLocaleString()}` : "₦0",
+        rating: restaurant.average_rating || 0,
+        location: restaurant.location?.address || restaurant.address || "N/A",
         email: restaurant.email,
         phone: restaurant.phone_number,
-        isOpen: restaurant.is_open,
-        coverImage: restaurant.cover_image_url,
-        locations: restaurant.locations,
-        operatingHours: restaurant.operating_hours
+        created_at: restaurant.created_at,
+        updated_at: restaurant.updated_at
       }));
-      
-      console.log('Mapped restaurants:', restaurants);
-      return restaurants;
     } catch (error) {
       console.error('Failed to fetch restaurants:', error);
-      // Return empty array if API fails
-      return [];
+      // Fallback to mock data if API fails
+      return [
+        {
+          id: "V-101",
+          name: "Chicken Republic - Ikeja",
+          category: "Food & Beverages",
+          status: "Active",
+          orders: 1250,
+          revenue: "₦2,500,000",
+          rating: 4.5,
+          location: "Ikeja, Lagos"
+        },
+      ];
     }
   },
 
-  async getRestaurant(id: string) {
-    try {
-      const response = await api.request(`/restaurants/profile?restaurant_id=${id}`);
-      return response;
-    } catch (error) {
-      console.error('Failed to fetch restaurant:', error);
-      // Return mock data as fallback
-      return {
-        id,
-        name: "Chicken Republic - Ikeja",
-        category: "Food & Beverages",
-        status: "Active",
-        businessName: "Chicken Republic Nigeria Ltd",
-        vendorId: "V-101",
-        businessAddress: "123 Allen Avenue, Ikeja, Lagos",
-        contactPerson: "John Doe",
-        email: "john@chickenrepublic.com",
-        phone: "+234 802 123 4567",
-        registrationDate: "2023-01-15",
-        lastActive: "2024-01-15",
-        totalOrders: 1250,
-        totalRevenue: "₦2,500,000",
-        averageRating: 4.5,
-        documents: ["Certificate & Licenses"]
-      };
-    }
-  },
-
-  async getRestaurantMenu(restaurantId: string) {
-    try {
-      const response = await api.request(`/restaurants/${restaurantId}/menu`);
-      return response.menu_items || [];
-    } catch (error) {
-      console.error('Failed to fetch restaurant menu:', error);
-      return [];
-    }
-  },
-
-  async createRestaurant(data: any) {
-    try {
-      const response = await api.request('/restaurants/new', {
-        method: 'POST',
-        body: JSON.stringify(data)
-      });
-      return response;
-    } catch (error) {
-      console.error('Failed to create restaurant:', error);
-      throw error;
-    }
-  },
-
-  async updateRestaurant(restaurantId: string, data: any) {
-    try {
-      const response = await api.request(`/restaurants/${restaurantId}/profile`, {
-        method: 'PATCH',
-        body: JSON.stringify(data)
-      });
-      return response;
-    } catch (error) {
-      console.error('Failed to update restaurant:', error);
-      throw error;
-    }
-  },
-
-  async deleteRestaurant(restaurantId: string) {
-    try {
-      const response = await api.request(`/restaurants/${restaurantId}/profile`, {
-        method: 'DELETE'
-      });
-      return response;
-    } catch (error) {
-      console.error('Failed to delete restaurant:', error);
-      throw error;
-    }
-  },
-
-  // Menu Management
-  async createMenuItem(restaurantId: string, data: any) {
-    try {
-      const response = await api.request(`/restaurants/${restaurantId}/menu`, {
-        method: 'POST',
-        body: JSON.stringify(data)
-      });
-      return response;
-    } catch (error) {
-      console.error('Failed to create menu item:', error);
-      throw error;
-    }
-  },
-
-  async updateMenuItem(itemId: string, data: any) {
-    try {
-      const response = await api.request(`/restaurants/menu/${itemId}`, {
-        method: 'PATCH',
-        body: JSON.stringify(data)
-      });
-      return response;
-    } catch (error) {
-      console.error('Failed to update menu item:', error);
-      throw error;
-    }
-  },
-
-  async deleteMenuItem(itemId: string) {
-    try {
-      const response = await api.request(`/restaurants/menu/${itemId}`, {
-        method: 'DELETE'
-      });
-      return response;
-    } catch (error) {
-      console.error('Failed to delete menu item:', error);
-      throw error;
-    }
-  },
-
-  // Search & Filter
-  async searchRestaurantsByCategory(category: string) {
-    try {
-      const response = await api.request(`/restaurants/search/by-categories?category=${category}`);
-      return response.restaurants || [];
-    } catch (error) {
-      console.error('Failed to search restaurants by category:', error);
-      return [];
-    }
+  async getVendor(id: string) {
+    // Mock vendor data
+    return {
+      id,
+      name: "Chicken Republic - Ikeja",
+      category: "Food & Beverages",
+      status: "Active",
+      businessName: "Chicken Republic Nigeria Ltd",
+      vendorId: "V-101",
+      businessAddress: "123 Allen Avenue, Ikeja, Lagos",
+      contactPerson: "John Doe",
+      email: "john@chickenrepublic.com",
+      phone: "+234 802 123 4567",
+      registrationDate: "2023-01-15",
+      lastActive: "2024-01-15",
+      totalOrders: 1250,
+      totalRevenue: "₦2,500,000",
+      averageRating: 4.5,
+      documents: ["Certificate & Licenses"]
+    };
   },
 
   // Users
