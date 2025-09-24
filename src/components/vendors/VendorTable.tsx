@@ -273,7 +273,7 @@ export function VendorTable({ vendors = [], onRefresh }: VendorTableProps) {
     setConfirmDialog({
       open: true,
       title: "Suspend Restaurant",
-      description: `Are you sure you want to suspend "${restaurant.name}"? This will prevent them from receiving new orders.`,
+      description: `Are you sure you want to suspend "${restaurant.name}"? This will change their status to Inactive and prevent them from receiving new orders.`,
       action: () => handleSuspendRestaurant(restaurant.id),
       variant: "default"
     });
@@ -283,7 +283,7 @@ export function VendorTable({ vendors = [], onRefresh }: VendorTableProps) {
     setConfirmDialog({
       open: true,
       title: "Approve Restaurant",
-      description: `Are you sure you want to approve "${restaurant.name}"? This will allow them to receive orders.`,
+      description: `Are you sure you want to approve "${restaurant.name}"? This will change their status to Active and allow them to receive new orders.`,
       action: () => handleApproveRestaurant(restaurant.id),
       variant: "default"
     });
