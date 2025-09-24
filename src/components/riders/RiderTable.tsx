@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -7,6 +8,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/compon
 import { Search, Filter, ArrowUpDown, ChevronRight, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { PaginationControls } from "@/components/ui/pagination-controls";
+import { apiServices } from "@/lib/api-services";
 
 interface Rider {
   id: string;
@@ -20,30 +22,34 @@ interface Rider {
   lastLogin: string;
 }
 
-const riders: Rider[] = [
-  { id: "1", name: "Oodus Ajase", riderId: "DRDR-101", zone: "Ikeja", status: "Active", completedOrders: 50, avgDeliveryTime: "10 Minutes", rating: "4.5 ★", lastLogin: "30|06|2025 08:55PM" },
-  { id: "2", name: "Luke Shaw", riderId: "DRDR-101", zone: "Nil", status: "Pending verification", completedOrders: 0, avgDeliveryTime: "0 Minutes", rating: "0 ★", lastLogin: "30|06|2025 08:55PM" },
-  { id: "3", name: "Lekan Babalola", riderId: "DRDR-101", zone: "Nil", status: "Pending verification", completedOrders: 0, avgDeliveryTime: "0 Minutes", rating: "0 ★", lastLogin: "30|06|2025 08:55PM" },
-  { id: "4", name: "John Isaac", riderId: "DRDR-101", zone: "Ikeja", status: "Pending verification", completedOrders: 0, avgDeliveryTime: "0 Minutes", rating: "0 ★", lastLogin: "30|06|2025 08:55PM" },
-  { id: "5", name: "Tunde Iadipo", riderId: "DRDR-101", zone: "Ikeja", status: "Suspended", completedOrders: 50, avgDeliveryTime: "10 Minutes", rating: "4.5 ★", lastLogin: "30|06|2025 08:55PM" },
-  { id: "6", name: "Ikechukwu Chinedu", riderId: "DRDR-101", zone: "Ikeja", status: "Suspended", completedOrders: 50, avgDeliveryTime: "10 Minutes", rating: "4.5 ★", lastLogin: "30|06|2025 08:55PM" },
-  { id: "7", name: "Alpaan Sunday", riderId: "DRDR-101", zone: "Ikeja", status: "Active", completedOrders: 50, avgDeliveryTime: "10 Minutes", rating: "4.5 ★", lastLogin: "30|06|2025 08:55PM" },
-  { id: "8", name: "Arah Barnabas", riderId: "DRDR-101", zone: "Ikeja", status: "Active", completedOrders: 50, avgDeliveryTime: "10 Minutes", rating: "4.5 ★", lastLogin: "30|06|2025 08:55PM" },
-  { id: "9", name: "Peter Simon", riderId: "DRDR-101", zone: "Ikeja", status: "Active", completedOrders: 50, avgDeliveryTime: "10 Minutes", rating: "4.5 ★", lastLogin: "30|06|2025 08:55PM" },
-  { id: "10", name: "Rotimi Philips", riderId: "DRDR-101", zone: "Ikeja", status: "Suspended", completedOrders: 50, avgDeliveryTime: "10 Minutes", rating: "4.5 ★", lastLogin: "30|06|2025 08:55PM" },
-  { id: "11", name: "Lewis Cole", riderId: "DRDR-101", zone: "Ikeja", status: "Active", completedOrders: 50, avgDeliveryTime: "10 Minutes", rating: "4.5 ★", lastLogin: "30|06|2025 08:55PM" },
-  { id: "12", name: "Kunle Ajani", riderId: "DRDR-101", zone: "Ikeja", status: "Active", completedOrders: 50, avgDeliveryTime: "10 Minutes", rating: "4.5 ★", lastLogin: "30|06|2025 08:55PM" },
-];
-
 export function RiderTable() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const navigate = useNavigate();
 
+  const { data: apiRiders = [], isLoading, isError } = useQuery({
+    queryKey: ["riders", currentPage, searchTerm],
+    queryFn: () => apiServices.getRiders({ page: currentPage, page_size: 10, search: searchTerm }),
+    staleTime: 30_000
+  });
+
+  const riders: Rider[] = (apiRiders as any[]).map((r: any) => ({
+    id: r.id,
+    name: r.name ?? "",
+    riderId: r.id ?? r.riderId ?? "",
+    zone: r.zone ?? "-",
+    status: (r.status === "Suspended" ? "Suspended" : r.status === "Pending verification" ? "Pending verification" : "Active") as Rider["status"],
+    completedOrders: r.totalDeliveries ?? r.completed_orders ?? 0,
+    avgDeliveryTime: r.averageDeliveryTime ?? r.avg_delivery_time ?? "-",
+    rating: typeof r.rating === "number" ? `${r.rating} ★` : r.rating ?? "-",
+    lastLogin: r.last_login ?? r.joinDate ?? "-",
+  }));
+
+  const query = (searchTerm || "").toLowerCase();
   const filtered = riders.filter(r =>
-    r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    r.riderId.toLowerCase().includes(searchTerm.toLowerCase())
+    (r.name || "").toLowerCase().includes(query) ||
+    (r.riderId || "").toLowerCase().includes(query)
   );
 
   const pageSize = 10;
@@ -57,6 +63,8 @@ export function RiderTable() {
 
   return (
     <div className="space-y-4">
+      {isLoading && <div className="text-sm text-muted-foreground">Loading riders...</div>}
+      {isError && <div className="text-sm text-red-600">Failed to load riders.</div>}
       <div className="flex items-center justify-between">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />

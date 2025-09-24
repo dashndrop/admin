@@ -5,28 +5,38 @@ export const apiServices = {
   // Vendors
   async getVendors() {
     try {
-      const restaurants = await api.getRestaurants();
+      const restaurants = await api.getRestaurants() as any[];
       console.log('Fetched restaurants from API:', restaurants);
       
       // Transform API response to match our UI expectations
-      return restaurants.map((restaurant: any) => ({
-        id: restaurant.id,
-        name: restaurant.name,
-        description: restaurant.description,
-        email: restaurant.email,
-        phone: restaurant.phone_number,
-        status: restaurant.is_open ? "Active" : "Inactive",
-        category: "Food & Beverages", // Default since not in API response
-        locations: restaurant.locations || [],
-        operating_hours: restaurant.operating_hours || [],
-        cover_image_url: restaurant.cover_image_url,
-        created_at: restaurant.created_at,
-        updated_at: restaurant.updated_at,
-        // For display purposes
-        revenue: "₦0", // Not available in API
-        rating: 0, // Not available in API
-        orders: 0 // Not available in API
-      }));
+      return restaurants.map((restaurant: any) => {
+        // Backend returns flags, not a direct status string.
+        // Precedence: Suspended > Active (is_open) > Inactive
+        const status: "Suspended" | "Active" | "Inactive" = restaurant?.is_suspended
+          ? "Suspended"
+          : restaurant?.is_open
+          ? "Active"
+          : "Inactive";
+
+        return {
+          id: restaurant.id,
+          name: restaurant.name,
+          description: restaurant.description,
+          email: restaurant.email,
+          phone: restaurant.phone_number,
+          status,
+          category: "Food & Beverages", // Default since not in API response
+          locations: restaurant.locations || [],
+          operating_hours: restaurant.operating_hours || [],
+          cover_image_url: restaurant.cover_image_url,
+          created_at: restaurant.created_at,
+          updated_at: restaurant.updated_at,
+          // For display purposes
+          revenue: "₦0", // Not available in API
+          rating: 0, // Not available in API
+          orders: 0 // Not available in API
+        };
+      });
     } catch (error) {
       console.error('Failed to fetch restaurants:', error);
       // Fallback to mock data if API fails
@@ -47,17 +57,23 @@ export const apiServices = {
 
   async getVendor(id: string) {
     try {
-      const restaurant = await api.getRestaurant(id);
+      const restaurant = await api.getRestaurant(id) as any;
       console.log('Fetched restaurant details:', restaurant);
       
       // Transform single restaurant response
+      const status: "Suspended" | "Active" | "Inactive" = restaurant?.is_suspended
+        ? "Suspended"
+        : restaurant?.is_open
+        ? "Active"
+        : "Inactive";
+
       return {
         id: restaurant.id,
         name: restaurant.name,
         description: restaurant.description,
         email: restaurant.email,
         phone: restaurant.phone_number,
-        status: restaurant.is_open ? "Active" : "Inactive",
+        status,
         category: "Food & Beverages",
         locations: restaurant.locations || [],
         operating_hours: restaurant.operating_hours || [],
@@ -165,22 +181,27 @@ export const apiServices = {
   },
 
   // Riders
-  async getRiders() {
-    return [
-      {
-        id: "RID-101",
-        name: "Qudus Ajase",
-        email: "qudus@mail.com",
-        phone: "+234 701 987 6543",
-        status: "Active",
-        vehicleType: "Motorcycle",
-        zone: "Ikeja",
-        totalDeliveries: 450,
-        rating: 4.8,
-        joinDate: "2023-03-10"
-      },
-      // Add more mock data
-    ];
+  async getRiders(params?: { page?: number; page_size?: number; search?: string; available?: boolean; status?: string; }) {
+    try {
+      const response: any = await api.getRiders(params);
+      // If backend returns pagination structure, normalize list
+      const list = Array.isArray(response) ? response : response.items || response.results || [];
+      return list.map((rider: any) => ({
+        id: rider.id ?? rider.rider_id,
+        name: rider.name,
+        email: rider.email,
+        phone: rider.phone_number ?? rider.phone,
+        status: rider.status ?? (rider.is_suspended ? 'Suspended' : 'Active'),
+        vehicleType: rider.vehicle_type ?? rider.vehicleType,
+        zone: rider.zone ?? rider.area,
+        totalDeliveries: rider.total_deliveries ?? rider.completed_orders ?? 0,
+        rating: rider.rating ?? rider.customer_rating ?? 0,
+        joinDate: rider.join_date ?? rider.created_at,
+      }));
+    } catch (error) {
+      console.error('Failed to fetch riders:', error);
+      return [];
+    }
   },
 
   async getRider(id: string) {
@@ -211,69 +232,63 @@ export const apiServices = {
   },
 
   // Orders
-  async getOrders() {
-    return [
-      {
-        id: "DDRD-101",
-        dateTime: "30/06/2025 08:55PM",
-        customer: "Mariam Ajani",
-        vendor: "Chicken Republic - Ikeja",
-        rider: "Qudus Ajase",
-        amount: "₦30,000.00",
-        status: "Delivered",
-        statusColor: "green"
-      },
-      // Add more mock data
-    ];
+  async getOrders(params?: { page?: number; page_size?: number; search?: string; status?: string; rider_id?: string; }) {
+    try {
+      const response: any = await api.getOrders(params);
+      const list = Array.isArray(response) ? response : response.items || response.results || [];
+      return list.map((order: any) => ({
+        id: order.id ?? order.order_id,
+        dateTime: order.date_time ?? order.created_at,
+        customer: order.customer?.name ?? order.customer_name,
+        vendor: order.vendor?.name ?? order.vendor_name,
+        rider: order.rider?.name ?? order.rider_name,
+        amount: order.amount_formatted ?? order.amount ?? order.total,
+        status: order.status,
+        statusColor: order.status_color ?? (
+          order.status === 'Delivered' ? 'green' :
+          order.status === 'In Transit' ? 'yellow' :
+          order.status === 'Cancelled' ? 'red' :
+          order.status === 'Refunded' ? 'orange' :
+          order.status === 'Placed' ? 'blue' : 'gray'
+        )
+      }));
+    } catch (error) {
+      console.error('Failed to fetch orders:', error);
+      return [];
+    }
   },
 
   async getOrder(id: string) {
-    return {
-      id,
-      status: "In Transit",
-      pickupTime: "09:30",
-      estimatedDropOff: "09:50",
-      timeRemaining: "00:10",
-      overtime: "00:00",
-      customer: {
-        name: "Mariam Ajani",
-        userId: "U-120",
-        email: "mariam@mail.com",
-        phone: "+234 802 123 4567",
-        location: "123, Lagos Street, Lagos"
-      },
-      vendor: {
-        name: "Chicken Republic - Ikeja",
-        vendorId: "V-101",
-        category: "Food & Beverages",
-        phone: "+234 802 765 4321",
-        location: "456, Ikeja Road, Lagos"
-      },
-      rider: {
-        name: "Qudus Ajase",
-        riderId: "RID-101",
-        email: "qudus@mail.com",
-        phone: "+234 701 987 6543",
-        status: "Active"
-      },
-      items: [
-        { sn: 1, item: "Jollof rice combo", quantity: "2x", unitPrice: "₦5,000.00", amount: "₦10,000.00" },
-        { sn: 2, item: "Fried rice combo", quantity: "1x", unitPrice: "₦5,000.00", amount: "₦5,000.00" },
-        { sn: 3, item: "Chicken", quantity: "3x", unitPrice: "₦2,000.00", amount: "₦6,000.00" },
-        { sn: 4, item: "Malt", quantity: "2x", unitPrice: "₦500.00", amount: "₦1,000.00" },
-        { sn: 5, item: "Pack", quantity: "1x", unitPrice: "₦1,000.00", amount: "₦1,000.00" },
-      ],
-      subtotal: "₦23,000.00",
-      vat: "₦1,000.00",
-      total: "₦24,000.00",
-      payment: {
-        amount: "₦24,000.00",
-        method: "Card",
-        transactionId: "TRX-987654",
-        status: "Completed",
-        date: "2024-01-15"
-      }
-    };
+    try {
+      // If backend lacks a dedicated endpoint, this will be filled later.
+      // For now, we try to derive by fetching list and matching id as a fallback.
+      const orders: any[] = await this.getOrders();
+      const found = orders.find((o: any) => (o.id ?? o.order_id) === id);
+      if (found) return found;
+      return { id } as any;
+    } catch (error) {
+      console.error('Failed to fetch order details:', error);
+      return { id } as any;
+    }
+  },
+
+  // Order Actions
+  async assignOrderToRider(orderId: string, riderId: string) {
+    try {
+      return await api.assignRiderToOrder(orderId, riderId);
+    } catch (error) {
+      console.error('Failed to assign rider to order:', error);
+      throw error;
+    }
+  },
+
+  async completeOrder(orderId: string) {
+    try {
+      return await api.completeOrder(orderId);
+    } catch (error) {
+      console.error('Failed to complete order:', error);
+      throw error;
+    }
   },
 
   // Payments

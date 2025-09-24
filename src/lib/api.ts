@@ -175,6 +175,61 @@ class ApiClient {
       method: 'DELETE'
     });
   }
+
+  // Riders
+  async getRiders(params?: {
+    page?: number;
+    page_size?: number;
+    search?: string;
+    available?: boolean;
+    status?: string;
+  }) {
+    const query = params
+      ? `?${new URLSearchParams(
+          Object.entries(params)
+            .filter(([, v]) => v !== undefined && v !== null && v !== '')
+            .reduce((acc, [k, v]) => {
+              acc[k] = String(v);
+              return acc;
+            }, {} as Record<string, string>)
+        ).toString()}`
+      : '';
+    return this.request(`/admin/riders${query}`);
+  }
+
+  // Orders
+  async getOrders(params?: {
+    page?: number;
+    page_size?: number;
+    search?: string;
+    status?: string;
+    rider_id?: string;
+  }) {
+    const query = params
+      ? `?${new URLSearchParams(
+          Object.entries(params)
+            .filter(([, v]) => v !== undefined && v !== null && v !== '')
+            .reduce((acc, [k, v]) => {
+              acc[k] = String(v);
+              return acc;
+            }, {} as Record<string, string>)
+        ).toString()}`
+      : '';
+    return this.request(`/admin/orders${query}`);
+  }
+
+  async assignRiderToOrder(orderId: string, riderId: string) {
+    return this.request(`/admin/order/${orderId}/assign-rider`, {
+      method: 'POST',
+      body: JSON.stringify({ rider_id: riderId })
+    });
+  }
+
+  async completeOrder(orderId: string) {
+    return this.request(`/admin/order/${orderId}/complete`, {
+      method: 'POST'
+    });
+  }
 }
 
 // Create API instance
