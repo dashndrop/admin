@@ -120,6 +120,7 @@ export function RiderTable() {
                 <Checkbox className="h-4 w-4" />
               </TableCell>
               <TableCell>{rider.name}</TableCell>
+              <TableCell>{rider.id}</TableCell>
               <TableCell>{rider.phone || '-'}</TableCell>
               <TableCell>{rider.email || '-'}</TableCell>
               <TableCell>{rider.vehicleType || '-'}</TableCell>
