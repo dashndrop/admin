@@ -10,13 +10,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Search, Filter, ArrowUpDown, ChevronRight, MoreHorizontal, Eye, Pause, Play } from "lucide-react";
+import { Search, Filter, ArrowUpDown, ChevronRight, MoreHorizontal, Eye, Pause, Play, Trash2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { apiServices } from "@/lib/api-services";
+import { useToast } from "@/components/ui/use-toast";
 import { VendorActionModal } from "./VendorActionModal";
 import { PaginationControls } from "@/components/ui/pagination-controls";
 
@@ -168,15 +171,18 @@ const expandedVendors: Vendor[] = [
 
 interface VendorTableProps {
   vendors: Vendor[];
+  onRefresh?: () => void;
 }
 
-export function VendorTable({ vendors = [] }: VendorTableProps) {
+export function VendorTable({ vendors = [], onRefresh }: VendorTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
   const [actionType, setActionType] = useState<"approve" | "reject" | "suspend" | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedVendors, setSelectedVendors] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const itemsPerPage = 10;
+  const { toast } = useToast();
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -195,6 +201,58 @@ export function VendorTable({ vendors = [] }: VendorTableProps) {
   const handleAction = (vendor: Vendor, action: "approve" | "reject" | "suspend") => {
     setSelectedVendor(vendor);
     setActionType(action);
+  };
+
+  const handleApproveRestaurant = async (restaurantId: string) => {
+    setIsLoading(true);
+    try {
+      await apiServices.approveRestaurant(restaurantId);
+      toast({ description: "Restaurant approved successfully!" });
+      if (onRefresh) onRefresh();
+    } catch (error) {
+      toast({ 
+        description: "Failed to approve restaurant", 
+        variant: "destructive" 
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSuspendRestaurant = async (restaurantId: string) => {
+    setIsLoading(true);
+    try {
+      await apiServices.suspendRestaurant(restaurantId);
+      toast({ description: "Restaurant suspended successfully!" });
+      if (onRefresh) onRefresh();
+    } catch (error) {
+      toast({ 
+        description: "Failed to suspend restaurant", 
+        variant: "destructive" 
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteRestaurant = async (restaurantId: string) => {
+    if (!confirm("Are you sure you want to delete this restaurant? This action cannot be undone.")) {
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      await apiServices.deleteRestaurant(restaurantId);
+      toast({ description: "Restaurant deleted successfully!" });
+      if (onRefresh) onRefresh();
+    } catch (error) {
+      toast({ 
+        description: "Failed to delete restaurant", 
+        variant: "destructive" 
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSelectVendor = (vendorId: string) => {
@@ -308,7 +366,12 @@ export function VendorTable({ vendors = [] }: VendorTableProps) {
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-8 w-8 p-0"
+                        disabled={isLoading}
+                      >
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -317,20 +380,32 @@ export function VendorTable({ vendors = [] }: VendorTableProps) {
                         <Eye className="mr-2 h-4 w-4" />
                         View Details
                       </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      {vendor.status === "Active" ? (
+                        <DropdownMenuItem 
+                          onClick={() => handleSuspendRestaurant(vendor.id)}
+                          disabled={isLoading}
+                        >
+                          <Pause className="mr-2 h-4 w-4" />
+                          Suspend Restaurant
+                        </DropdownMenuItem>
+                      ) : (
+                        <DropdownMenuItem 
+                          onClick={() => handleApproveRestaurant(vendor.id)}
+                          disabled={isLoading}
+                        >
+                          <Play className="mr-2 h-4 w-4" />
+                          Approve Restaurant
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuSeparator />
                       <DropdownMenuItem 
-                        onClick={() => handleAction(vendor, vendor.status === "Active" ? "suspend" : "approve")}
+                        onClick={() => handleDeleteRestaurant(vendor.id)}
+                        disabled={isLoading}
+                        className="text-red-600 focus:text-red-600"
                       >
-                        {vendor.status === "Active" ? (
-                          <>
-                            <Pause className="mr-2 h-4 w-4" />
-                            Suspend
-                          </>
-                        ) : (
-                          <>
-                            <Play className="mr-2 h-4 w-4" />
-                            Activate
-                          </>
-                        )}
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete Restaurant
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>

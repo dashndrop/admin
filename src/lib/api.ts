@@ -156,6 +156,25 @@ class ApiClient {
   async getRestaurant(id: string) {
     return this.request(`/admin/restaurants/${id}`);
   }
+
+  // Restaurant Management Actions
+  async approveRestaurant(restaurantId: string) {
+    return this.request(`/admin/restaurant/${restaurantId}/approve`, {
+      method: 'POST'
+    });
+  }
+
+  async suspendRestaurant(restaurantId: string) {
+    return this.request(`/admin/restaurant/${restaurantId}/suspend`, {
+      method: 'POST'
+    });
+  }
+
+  async deleteRestaurant(restaurantId: string) {
+    return this.request(`/admin/restaurant/${restaurantId}`, {
+      method: 'DELETE'
+    });
+  }
 }
 
 // Create API instance

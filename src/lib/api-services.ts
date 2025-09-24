@@ -46,25 +46,81 @@ export const apiServices = {
   },
 
   async getVendor(id: string) {
-    // Mock vendor data
-    return {
-      id,
-      name: "Chicken Republic - Ikeja",
-      category: "Food & Beverages",
-      status: "Active",
-      businessName: "Chicken Republic Nigeria Ltd",
-      vendorId: "V-101",
-      businessAddress: "123 Allen Avenue, Ikeja, Lagos",
-      contactPerson: "John Doe",
-      email: "john@chickenrepublic.com",
-      phone: "+234 802 123 4567",
-      registrationDate: "2023-01-15",
-      lastActive: "2024-01-15",
-      totalOrders: 1250,
-      totalRevenue: "₦2,500,000",
-      averageRating: 4.5,
-      documents: ["Certificate & Licenses"]
-    };
+    try {
+      const restaurant = await api.getRestaurant(id);
+      console.log('Fetched restaurant details:', restaurant);
+      
+      // Transform single restaurant response
+      return {
+        id: restaurant.id,
+        name: restaurant.name,
+        description: restaurant.description,
+        email: restaurant.email,
+        phone: restaurant.phone_number,
+        status: restaurant.is_open ? "Active" : "Inactive",
+        category: "Food & Beverages",
+        locations: restaurant.locations || [],
+        operating_hours: restaurant.operating_hours || [],
+        cover_image_url: restaurant.cover_image_url,
+        created_at: restaurant.created_at,
+        updated_at: restaurant.updated_at
+      };
+    } catch (error) {
+      console.error('Failed to fetch restaurant details:', error);
+      // Fallback to mock data
+      return {
+        id,
+        name: "Chicken Republic - Ikeja",
+        category: "Food & Beverages",
+        status: "Active",
+        businessName: "Chicken Republic Nigeria Ltd",
+        vendorId: "V-101",
+        businessAddress: "123 Allen Avenue, Ikeja, Lagos",
+        contactPerson: "John Doe",
+        email: "john@chickenrepublic.com",
+        phone: "+234 802 123 4567",
+        registrationDate: "2023-01-15",
+        lastActive: "2024-01-15",
+        totalOrders: 1250,
+        totalRevenue: "₦2,500,000",
+        averageRating: 4.5,
+        documents: ["Certificate & Licenses"]
+      };
+    }
+  },
+
+  // Restaurant Management Actions
+  async approveRestaurant(restaurantId: string) {
+    try {
+      const result = await api.approveRestaurant(restaurantId);
+      console.log('Restaurant approved:', result);
+      return result;
+    } catch (error) {
+      console.error('Failed to approve restaurant:', error);
+      throw error;
+    }
+  },
+
+  async suspendRestaurant(restaurantId: string) {
+    try {
+      const result = await api.suspendRestaurant(restaurantId);
+      console.log('Restaurant suspended:', result);
+      return result;
+    } catch (error) {
+      console.error('Failed to suspend restaurant:', error);
+      throw error;
+    }
+  },
+
+  async deleteRestaurant(restaurantId: string) {
+    try {
+      const result = await api.deleteRestaurant(restaurantId);
+      console.log('Restaurant deleted:', result);
+      return result;
+    } catch (error) {
+      console.error('Failed to delete restaurant:', error);
+      throw error;
+    }
   },
 
   // Users

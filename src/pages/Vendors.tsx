@@ -14,32 +14,32 @@ export default function Vendors() {
     totalRevenue: "₦0"
   });
 
+  const fetchVendors = async () => {
+    try {
+      setLoading(true);
+      const vendorData = await apiServices.getVendors();
+      console.log('Vendor data loaded:', vendorData);
+      setVendors(vendorData);
+      
+      // Calculate stats from vendor data
+      const activeVendors = vendorData.filter((v: any) => v.status === "Active").length;
+      const inactiveVendors = vendorData.filter((v: any) => v.status === "Inactive").length;
+      const totalLocations = vendorData.reduce((sum: number, v: any) => sum + (v.locations?.length || 0), 0);
+
+      setStats({
+        allVendors: vendorData.length,
+        pendingVendors: 0, // No pending status in current API
+        suspendedVendors: inactiveVendors,
+        totalRevenue: `${totalLocations} Locations` // Show total locations instead of revenue
+      });
+    } catch (error) {
+      console.error('Failed to fetch vendors:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchVendors = async () => {
-      try {
-        setLoading(true);
-        const vendorData = await apiServices.getVendors();
-        console.log('Vendor data loaded:', vendorData);
-        setVendors(vendorData);
-        
-        // Calculate stats from vendor data
-        const activeVendors = vendorData.filter((v: any) => v.status === "Active").length;
-        const inactiveVendors = vendorData.filter((v: any) => v.status === "Inactive").length;
-        const totalLocations = vendorData.reduce((sum: number, v: any) => sum + (v.locations?.length || 0), 0);
-
-        setStats({
-          allVendors: vendorData.length,
-          pendingVendors: 0, // No pending status in current API
-          suspendedVendors: inactiveVendors,
-          totalRevenue: `${totalLocations} Locations` // Show total locations instead of revenue
-        });
-      } catch (error) {
-        console.error('Failed to fetch vendors:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchVendors();
   }, []);
 
@@ -91,7 +91,7 @@ export default function Vendors() {
         />
       </div>
 
-      <VendorTable vendors={vendors} />
+      <VendorTable vendors={vendors} onRefresh={fetchVendors} />
     </div>
   );
 }
