@@ -8,6 +8,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/compon
 import { Search, Filter, ArrowUpDown, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { PaginationControls } from "@/components/ui/pagination-controls";
+import { DeliveryLoader } from "@/components/ui/delivery-loader";
 import { apiServices } from "@/lib/api-services";
 
 interface Rider {
@@ -59,7 +60,7 @@ export function RiderTable() {
 
   return (
     <div className="space-y-4">
-      {isLoading && <div className="text-sm text-muted-foreground">Loading riders...</div>}
+      {isLoading && <DeliveryLoader label="Fetching riders" />}
       {isError && <div className="text-sm text-red-600">Failed to load riders.</div>}
       <div className="flex items-center justify-between">
         <div className="relative">
