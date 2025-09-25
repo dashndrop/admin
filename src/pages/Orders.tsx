@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,6 +25,8 @@ import {
   X
 } from "lucide-react";
 import { PaginationControls } from "@/components/ui/pagination-controls";
+import { apiServices } from "@/lib/api-services";
+import { DeliveryLoader } from "@/components/ui/delivery-loader";
 
 const Orders = () => {
   const navigate = useNavigate();
@@ -33,128 +36,11 @@ const Orders = () => {
   const [isReviewDisputeOpen, setIsReviewDisputeOpen] = useState(false);
   const [selectedDispute, setSelectedDispute] = useState<any>(null);
 
-  const ordersData = [
-    {
-      id: "DDRD-101",
-      dateTime: "30/06/2025 08:55PM",
-      customer: "Mariam Ajani",
-      vendor: "Chicken Republic - Ikeja",
-      rider: "Qudus Ajase",
-      amount: "₦30,000.00",
-      status: "Delivered",
-      statusColor: "green"
-    },
-    {
-      id: "DDRD-102",
-      dateTime: "30/06/2025 08:55PM",
-      customer: "Mariam Ajani",
-      vendor: "Chicken Republic - Ikeja",
-      rider: "Qudus Ajase",
-      amount: "₦30,000.00",
-      status: "In Transit",
-      statusColor: "yellow"
-    },
-    {
-      id: "DDRD-103",
-      dateTime: "30/06/2025 08:55PM",
-      customer: "Mariam Ajani",
-      vendor: "Chicken Republic - Ikeja",
-      rider: "Qudus Ajase",
-      amount: "₦30,000.00",
-      status: "Cancelled",
-      statusColor: "red"
-    },
-    {
-      id: "DDRD-104",
-      dateTime: "30/06/2025 08:55PM",
-      customer: "Mariam Ajani",
-      vendor: "Chicken Republic - Ikeja",
-      rider: "Qudus Ajase",
-      amount: "₦30,000.00",
-      status: "Refunded",
-      statusColor: "orange"
-    },
-    {
-      id: "DDRD-105",
-      dateTime: "30/06/2025 08:55PM",
-      customer: "Mariam Ajani",
-      vendor: "Chicken Republic - Ikeja",
-      rider: "Qudus Ajase",
-      amount: "₦30,000.00",
-      status: "Placed",
-      statusColor: "blue"
-    },
-    {
-      id: "DDRD-106",
-      dateTime: "30/06/2025 08:55PM",
-      customer: "Mariam Ajani",
-      vendor: "Chicken Republic - Ikeja",
-      rider: "Qudus Ajase",
-      amount: "₦30,000.00",
-      status: "Delivered",
-      statusColor: "green"
-    },
-    {
-      id: "DDRD-107",
-      dateTime: "30/06/2025 08:55PM",
-      customer: "Mariam Ajani",
-      vendor: "Chicken Republic - Ikeja",
-      rider: "Qudus Ajase",
-      amount: "₦30,000.00",
-      status: "In Transit",
-      statusColor: "yellow"
-    },
-    {
-      id: "DDRD-108",
-      dateTime: "30/06/2025 08:55PM",
-      customer: "Mariam Ajani",
-      vendor: "Chicken Republic - Ikeja",
-      rider: "Qudus Ajase",
-      amount: "₦30,000.00",
-      status: "Cancelled",
-      statusColor: "red"
-    },
-    {
-      id: "DDRD-109",
-      dateTime: "30/06/2025 08:55PM",
-      customer: "Mariam Ajani",
-      vendor: "Chicken Republic - Ikeja",
-      rider: "Qudus Ajase",
-      amount: "₦30,000.00",
-      status: "Delivered",
-      statusColor: "green"
-    },
-    {
-      id: "DDRD-110",
-      dateTime: "30/06/2025 08:55PM",
-      customer: "Mariam Ajani",
-      vendor: "Chicken Republic - Ikeja",
-      rider: "Qudus Ajase",
-      amount: "₦30,000.00",
-      status: "In Transit",
-      statusColor: "yellow"
-    },
-    {
-      id: "DDRD-111",
-      dateTime: "30/06/2025 08:55PM",
-      customer: "Mariam Ajani",
-      vendor: "Chicken Republic - Ikeja",
-      rider: "Qudus Ajase",
-      amount: "₦30,000.00",
-      status: "Placed",
-      statusColor: "blue"
-    },
-    {
-      id: "DDRD-112",
-      dateTime: "30/06/2025 08:55PM",
-      customer: "Mariam Ajani",
-      vendor: "Chicken Republic - Ikeja",
-      rider: "Qudus Ajase",
-      amount: "₦30,000.00",
-      status: "Delivered",
-      statusColor: "green"
-    }
-  ];
+  const { data: ordersData = [], isLoading: ordersLoading, isError: ordersError } = useQuery({
+    queryKey: ["orders", currentPage],
+    queryFn: () => apiServices.getOrders({ page: currentPage, page_size: 10 }),
+    staleTime: 30_000
+  });
 
   const disputesData = [
     {
@@ -365,6 +251,8 @@ const Orders = () => {
           {/* Orders Table */}
           <Card>
             <CardContent className="p-0">
+            {ordersLoading && <DeliveryLoader label="Fetching orders" />}
+            {ordersError && <div className="p-6 text-sm text-red-600">Failed to load orders.</div>}
             <Table>
               <TableHeader>
                   <TableRow className="bg-gray-50">
@@ -382,7 +270,7 @@ const Orders = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {ordersData.map((order) => (
+                {(ordersData as any[]).map((order) => (
                   <TableRow key={order.id}>
                       <TableCell>
                         <Checkbox />

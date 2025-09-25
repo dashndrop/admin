@@ -1,14 +1,48 @@
 import { useNavigate, useParams } from "react-router-dom";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowLeft, Copy, User, Store, Truck, ClipboardList, CreditCard, CheckCircle, MapPin, Clock, ShoppingBag, User as UserIcon, Phone, Mail, ChevronDown } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { apiServices } from "@/lib/api-services";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { DeliveryLoader } from "@/components/ui/delivery-loader";
 
 export default function OrderDetails() {
   const navigate = useNavigate();
   const { id } = useParams();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [assignOpen, setAssignOpen] = useState(false);
+  const [selectedRider, setSelectedRider] = useState<string>("");
+
+  const { data: riders = [], isLoading: ridersLoading } = useQuery({
+    queryKey: ["riders-for-assign"],
+    queryFn: () => apiServices.getRiders({ page: 1, page_size: 50, available: true })
+  });
+
+  const assignMutation = useMutation({
+    mutationFn: () => apiServices.assignOrderToRider(id as string, selectedRider),
+    onSuccess: () => {
+      toast({ description: "Rider assigned successfully" });
+      setAssignOpen(false);
+      setSelectedRider("");
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+    },
+    onError: (e: any) => toast({ description: e?.message || "Failed to assign rider" })
+  });
+
+  const completeMutation = useMutation({
+    mutationFn: () => apiServices.completeOrder(id as string),
+    onSuccess: () => {
+      toast({ description: "Order marked complete" });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+    },
+    onError: (e: any) => toast({ description: e?.message || "Failed to complete order" })
+  });
 
   const orderData = {
     id: "DDRD-101",
@@ -132,14 +166,47 @@ export default function OrderDetails() {
                     </div>
                   </div>
                 </div>
-                <Button className="bg-[#003366] hover:bg-[#003366]/90 text-white">
-                  Re-assign Order
-                </Button>
+                <div className="flex gap-2">
+                  <Button className="bg-[#003366] hover:bg-[#003366]/90 text-white" onClick={() => setAssignOpen(true)}>
+                    Re-assign Rider
+                  </Button>
+                  <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => completeMutation.mutate()}>
+                    Mark as Complete
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* Assign Rider Modal */}
+      <Dialog open={assignOpen} onOpenChange={setAssignOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Assign Rider</DialogTitle>
+          </DialogHeader>
+          {ridersLoading ? (
+            <DeliveryLoader label="Loading riders" />
+          ) : (
+            <div className="space-y-4">
+              <Select value={selectedRider} onValueChange={setSelectedRider}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select rider" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(riders as any[]).map((r) => (
+                    <SelectItem key={r.id} value={r.id}>{r.name} — {r.phone}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button className="bg-[#003366] hover:bg-[#003366]/90 text-white w-full" disabled={!selectedRider || assignMutation.isPending} onClick={() => assignMutation.mutate()}>
+                {assignMutation.isPending ? "Assigning..." : "Assign Rider"}
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Customer Info */}
       <Card>
