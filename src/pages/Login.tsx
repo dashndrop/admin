@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { DeliveryLoader } from "@/components/ui/delivery-loader";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Eye, EyeOff, User } from "lucide-react";
@@ -126,7 +127,7 @@ export default function Login() {
               className="w-full h-12 text-white font-medium rounded-lg"
               style={{ backgroundColor: "#F28C28" }}
             >
-              {isLoading ? "Signing in..." : "Sign In"}
+              {isLoading ? <div className="-my-6"><DeliveryLoader label="Signing in" /></div> : "Sign In"}
             </Button>
           </form>
         </div>

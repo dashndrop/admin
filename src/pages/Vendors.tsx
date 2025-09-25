@@ -3,6 +3,7 @@ import { StatsCard } from "@/components/dashboard/StatsCard";
 import { VendorTable } from "@/components/vendors/VendorTable";
 import { apiServices } from "@/lib/api-services";
 import { Store } from "lucide-react";
+import { DeliveryLoader } from "@/components/ui/delivery-loader";
 
 export default function Vendors() {
   const [vendors, setVendors] = useState([]);
@@ -46,12 +47,7 @@ export default function Vendors() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="w-8 h-8 border-4 border-[#F28C28] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading vendors...</p>
-          </div>
-        </div>
+        <DeliveryLoader label="Fetching vendors" />
       </div>
     );
   }
