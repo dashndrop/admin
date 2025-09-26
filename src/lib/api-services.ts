@@ -275,10 +275,10 @@ export const apiServices = {
 
   async getOrder(id: string) {
     try {
-      // If backend lacks a dedicated endpoint, this will be filled later.
-      // For now, we try to derive by fetching list and matching id as a fallback.
-      const { list: orders } = await this.getOrders();
-      const found = (orders as any[]).find((o: any) => (o.id ?? o.order_id) === id);
+      // Backend doesn't expose a dedicated endpoint yet. Build a minimal shape
+      // by reading the paginated list and matching by both id and _id.
+      const { list: orders } = await this.getOrders({ page: 1, page_size: 50 });
+      const found = (orders as any[]).find((o: any) => (o.id ?? o._id ?? o.order_id) === id);
       if (found) return found;
       return { id } as any;
     } catch (error) {

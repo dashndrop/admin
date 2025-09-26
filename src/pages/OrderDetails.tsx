@@ -19,6 +19,13 @@ export default function OrderDetails() {
   const [assignOpen, setAssignOpen] = useState(false);
   const [selectedRider, setSelectedRider] = useState<string>("");
 
+  // Load order to ensure we act on the correct ID
+  const { data: orderFromApi, isLoading: orderLoading } = useQuery({
+    queryKey: ["order", id],
+    queryFn: () => apiServices.getOrder(id as string),
+    enabled: !!id
+  });
+
   const { data: riders = [], isLoading: ridersLoading } = useQuery({
     queryKey: ["riders-for-assign"],
     queryFn: () => apiServices.getRiders({ page: 1, page_size: 50, available: true })
@@ -45,8 +52,8 @@ export default function OrderDetails() {
   });
 
   const orderData = {
-    id: "DDRD-101",
-    status: "In Transit",
+    id: (orderFromApi as any)?.id ?? (orderFromApi as any)?._id ?? "DDRD-101",
+    status: (orderFromApi as any)?.status ?? "In Transit",
     pickupTime: "09:30",
     estimatedDropOff: "09:50",
     timeRemaining: "00:10",
@@ -124,7 +131,7 @@ export default function OrderDetails() {
               {/* Status Badge */}
               <div className="absolute top-4 right-4">
                 <span className="bg-yellow-500 text-yellow-900 px-2 py-1 rounded text-sm font-medium">
-                  {orderData.status}
+                  {orderLoading ? "Loading..." : orderData.status}
                 </span>
               </div>
             </div>

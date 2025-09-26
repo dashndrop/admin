@@ -230,7 +230,7 @@ class ApiClient {
   async assignRiderToOrder(orderId: string, riderId: string) {
     return this.request(`/admin/order/${orderId}/assign-rider`, {
       method: 'POST',
-      body: JSON.stringify({ rider_id: riderId, riderId, rider: riderId })
+      body: JSON.stringify({ rider_id: riderId })
     });
   }
 
