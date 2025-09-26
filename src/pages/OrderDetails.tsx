@@ -32,7 +32,7 @@ export default function OrderDetails() {
       setSelectedRider("");
       queryClient.invalidateQueries({ queryKey: ["orders"] });
     },
-    onError: (e: any) => toast({ description: e?.message || "Failed to assign rider" })
+    onError: (e: any) => toast({ description: typeof e?.message === 'string' ? e.message : JSON.stringify(e) })
   });
 
   const completeMutation = useMutation({

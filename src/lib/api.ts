@@ -45,8 +45,17 @@ class ApiClient {
       const data = JSON.parse(text);
       
       if (!response.ok) {
-        let errorMessage = `HTTP ${response.status}`;
-        errorMessage = data.detail || data.message || errorMessage;
+        let errorMessage: string = `HTTP ${response.status}`;
+        const detail = (data as any)?.detail;
+        if (Array.isArray(detail)) {
+          errorMessage = detail.map((d: any) => d?.msg || d?.message || JSON.stringify(d)).join("; ");
+        } else if (typeof detail === 'object' && detail !== null) {
+          errorMessage = (detail.msg || detail.message || JSON.stringify(detail));
+        } else if ((data as any)?.message) {
+          errorMessage = (data as any).message;
+        } else if ((data as any)?.error) {
+          errorMessage = (data as any).error;
+        }
         throw new Error(errorMessage);
       }
       
@@ -221,7 +230,7 @@ class ApiClient {
   async assignRiderToOrder(orderId: string, riderId: string) {
     return this.request(`/admin/order/${orderId}/assign-rider`, {
       method: 'POST',
-      body: JSON.stringify({ rider_id: riderId })
+      body: JSON.stringify({ rider_id: riderId, riderId, rider: riderId })
     });
   }
 
