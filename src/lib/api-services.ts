@@ -236,26 +236,40 @@ export const apiServices = {
   async getOrders(params?: { page?: number; page_size?: number; search?: string; status?: string; rider_id?: string; }) {
     try {
       const response: any = await api.getOrders(params);
-      const list = Array.isArray(response) ? response : response.items || response.results || [];
-      return list.map((order: any) => ({
-        id: order.id ?? order.order_id,
-        dateTime: order.date_time ?? order.created_at,
-        customer: order.customer?.name ?? order.customer_name,
-        vendor: order.vendor?.name ?? order.vendor_name,
-        rider: order.rider?.name ?? order.rider_name,
-        amount: order.amount_formatted ?? order.amount ?? order.total,
-        status: order.status,
-        statusColor: order.status_color ?? (
-          order.status === 'Delivered' ? 'green' :
-          order.status === 'In Transit' ? 'yellow' :
-          order.status === 'Cancelled' ? 'red' :
-          order.status === 'Refunded' ? 'orange' :
-          order.status === 'Placed' ? 'blue' : 'gray'
-        )
-      }));
+      const rawList = Array.isArray(response)
+        ? response
+        : response.orders || response.items || response.results || [];
+
+      const list = rawList.map((order: any) => {
+        const status: string = order.status ?? 'unknown';
+        const statusColor = (
+          status === 'delivered' || status === 'completed' ? 'green' :
+          status === 'in_transit' || status === 'pending' || status === 'pending_payment' ? 'yellow' :
+          status === 'cancelled' ? 'red' :
+          status === 'refunded' ? 'orange' : 'gray'
+        );
+        return {
+          id: order._id ?? order.id ?? order.order_id,
+          dateTime: order.created_at ?? order.date_time,
+          customer: order.user_id ?? order.customer_name ?? '-',
+          vendor: order.restaurant_id ?? order.vendor_name ?? '-',
+          rider: order.rider_id ?? order.rider_name ?? '-',
+          amount: order.total_price ?? order.amount ?? order.amount_formatted ?? '-',
+          status,
+          statusColor
+        };
+      });
+
+      const meta = {
+        total: response?.total ?? list.length,
+        page: response?.page ?? params?.page ?? 1,
+        page_size: response?.limit ?? params?.page_size ?? list.length
+      };
+
+      return { list, meta };
     } catch (error) {
       console.error('Failed to fetch orders:', error);
-      return [];
+      return { list: [], meta: { total: 0, page: params?.page ?? 1, page_size: params?.page_size ?? 10 } };
     }
   },
 
@@ -263,8 +277,8 @@ export const apiServices = {
     try {
       // If backend lacks a dedicated endpoint, this will be filled later.
       // For now, we try to derive by fetching list and matching id as a fallback.
-      const orders: any[] = await this.getOrders();
-      const found = orders.find((o: any) => (o.id ?? o.order_id) === id);
+      const { list: orders } = await this.getOrders();
+      const found = (orders as any[]).find((o: any) => (o.id ?? o.order_id) === id);
       if (found) return found;
       return { id } as any;
     } catch (error) {

@@ -36,11 +36,12 @@ const Orders = () => {
   const [isReviewDisputeOpen, setIsReviewDisputeOpen] = useState(false);
   const [selectedDispute, setSelectedDispute] = useState<any>(null);
 
-  const { data: ordersData = [], isLoading: ordersLoading, isError: ordersError } = useQuery({
+  const { data: ordersResp, isLoading: ordersLoading, isError: ordersError } = useQuery({
     queryKey: ["orders", currentPage],
     queryFn: () => apiServices.getOrders({ page: currentPage, page_size: 10 }),
     staleTime: 30_000
   });
+  const ordersData = (ordersResp?.list as any[]) || [];
 
   const disputesData = [
     {
@@ -308,7 +309,7 @@ const Orders = () => {
           <div className="flex justify-center">
           <PaginationControls
             currentPage={currentPage}
-            totalPages={10}
+            totalPages={Math.max(1, Math.ceil((ordersResp?.meta?.total || ordersData.length || 1) / (ordersResp?.meta?.page_size || 10)))}
             onPageChange={setCurrentPage}
           />
           </div>
