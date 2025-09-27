@@ -61,12 +61,12 @@ export default function ResetPassword() {
       </div>
 
       {/* Right Side - Banner Image */}
-      <div className="hidden lg:flex lg:flex-1">
-        <div className="relative w-full h-full">
+      <div className="hidden lg:flex lg:flex-1 items-center justify-center p-8">
+        <div className="relative w-full max-w-2xl rounded-2xl overflow-hidden shadow-md">
           <img
             src={loginBanner}
             alt="Login Banner"
-            className="w-full h-full object-cover"
+            className="w-full h-auto object-cover"
           />
           {/* Overlay with delivery icon */}
           <div className="absolute bottom-6 right-6">
