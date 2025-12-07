@@ -25,11 +25,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(profile);
           setIsAuthenticated(true);
         } catch (error) {
-          // Token is invalid, logout
+          console.error('Auth check failed:', error);
+          // Token is invalid or expired, logout and redirect to login
           api.logout();
           setIsAuthenticated(false);
           setUser(null);
+          
+          // Only redirect if we're not already on the login page
+          if (!window.location.pathname.includes('/login')) {
+            window.location.href = '/login';
+          }
         }
+      } else if (!window.location.pathname.includes('/login')) {
+        // If not authenticated and not on login page, redirect to login
+        window.location.href = '/login';
       }
       setLoading(false);
     };

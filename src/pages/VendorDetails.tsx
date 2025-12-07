@@ -1,105 +1,359 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, User, BarChart3, DollarSign, TrendingUp, TrendingDown, Clock, Star, Building2, Mail, Phone } from "lucide-react";
-import profileIcon from "/img/profile.png";
-import { VendorActionModal } from "@/components/vendors/VendorActionModal";
-import { VendorSettingsModal } from "@/components/vendors/VendorSettingsModal";
+import { Building2, Mail, Phone, MapPin, ArrowLeft, AlertTriangle, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { DeliveryLoader } from "@/components/ui/delivery-loader";
+import { useToast } from "@/components/ui/use-toast";
+import { apiServices } from "@/lib/api-services";
+import Swal from 'sweetalert2';
 
-interface VendorDetails {
+// Custom SweetAlert2 theme
+const Toast = Swal.mixin({
+  toast: true,
+  position: 'top-end',
+  showConfirmButton: false,
+  timer: 3000,
+  timerProgressBar: true,
+  didOpen: (toast) => {
+    toast.addEventListener('mouseenter', Swal.stopTimer);
+    toast.addEventListener('mouseleave', Swal.resumeTimer);
+  }
+});
+
+type Vendor = {
   id: string;
   name: string;
-  location: string;
-  status: "Active" | "Pending Approval" | "Suspended";
-  businessName: string;
-  vendorId: string;
+  description?: string;
+  email?: string;
+  phone?: string;
+  phone_number?: string; // Alternative phone field
+  status: "Active" | "Suspended" | "Inactive";
   category: string;
-  businessAddress: string;
-  contactPerson: {
-    name: string;
-    email: string;
-    phone: string;
-  };
-  performance: {
-    salesVolume: string;
-    totalOrders: number;
-    cancellationRate: string;
-    avgDeliveryTime: string;
-    customerRating: string;
-  };
-  financial: {
-    commissionRate: string;
-    payoutThreshold: string;
-    lastPayout: {
-      date: string;
-      amount: string;
-    };
-  };
-}
-
-// Sample data - would come from API in real app
-const vendorDetails: VendorDetails = {
-  id: "1",
-  name: "Chicken Republic - Omole",
-  location: "Omole",
-  status: "Active",
-  businessName: "Chicken republic",
-  vendorId: "DNDV1000",
-  category: "Restaurant",
-  businessAddress: "Omole phase 1, Ojodu Berger",
-  contactPerson: {
-    name: "Adebayo Yusuf",
-    email: "Adebayosuf@gmail.com",
-    phone: "+234 90 800 500 0000",
-  },
-  performance: {
-    salesVolume: "₦300,000.00",
-    totalOrders: 1230,
-    cancellationRate: "3.2%",
-    avgDeliveryTime: "27 mins",
-    customerRating: "4.6 / 5.0",
-  },
-  financial: {
-    commissionRate: "15%",
-    payoutThreshold: "₦300,000.00",
-    lastPayout: {
-      date: "Aug 12, 2025",
-      amount: "₦300,000.00",
-    },
-  },
+  is_approved?: boolean;
+  is_open?: boolean;
+  is_suspended?: boolean;
+  business_registration_number?: string;
+  tax_id?: string;
+  business_entity_type?: string;
+  business_registration_certificate?: string;
+  restaurant_owner_valid_id?: string;
+  proof_of_business_operation?: string;
+  locations: Array<{
+    address_line?: string;
+    addressLine?: string;
+    address_line1?: string;
+    address_line2?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    postal_code?: string;
+  }>;
+  operating_hours?: Array<{
+    day: string;
+    opening_time: string;
+    closing_time: string;
+    is_closed: boolean;
+  }>;
+  cover_image_url?: string;
+  created_at?: string;
+  updated_at?: string;
+  rating?: number;
+  orders?: number;
+  revenue?: string;
 };
 
 export default function VendorDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [vendor] = useState<VendorDetails>(vendorDetails);
-  const [modalState, setModalState] = useState<{
-    open: boolean;
-    action: "approve" | "reject" | "suspend" | null;
-  }>({ open: false, action: null });
-  const [settingsModal, setSettingsModal] = useState<{
-    open: boolean;
-    type: "commission" | "threshold" | "documents" | null;
-  }>({ open: false, type: null });
+  const { toast } = useToast();
+  const [vendor, setVendor] = useState<Vendor | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
 
-  const getStatusColor = (status: string) => {
+  useEffect(() => {
+    const loadVendor = async () => {
+      if (!id) return;
+      setLoading(true);
+      try {
+        const data = await apiServices.getVendor(id);
+        setVendor(data as Vendor);
+      } catch (error) {
+        toast({ description: "Failed to load restaurant", variant: "destructive" });
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadVendor();
+  }, [id]);
+
+  const getStatusBadgeClass = (status?: string) => {
     switch (status) {
       case "Active":
         return "bg-green-100 text-green-800 border-green-200";
-      case "Pending Approval":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
       case "Suspended":
+      case "Inactive":
         return "bg-red-100 text-red-800 border-red-200";
       default:
         return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
 
+  const showLoading = () => {
+    Swal.fire({
+      title: 'Processing...',
+      html: 'Please wait while we process your request',
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      },
+    });
+  };
+
+  const approveRestaurant = async () => {
+    if (!vendor) return;
+    
+    const result = await Swal.fire({
+      title: 'Approve Restaurant',
+      text: `Are you sure you want to approve ${vendor.name}?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#10B981',
+      cancelButtonColor: '#6B7280',
+      confirmButtonText: 'Yes, approve it!',
+      cancelButtonText: 'Cancel',
+      reverseButtons: true,
+      customClass: {
+        confirmButton: 'mr-2',
+      },
+    });
+
+    if (!result.isConfirmed) return;
+    
+    setActionLoading(true);
+    showLoading();
+    
+    try {
+      await apiServices.approveRestaurant(vendor.id);
+      const refreshed = await apiServices.getVendor(vendor.id);
+      setVendor(refreshed as Vendor);
+      
+      await Swal.fire({
+        title: 'Approved!',
+        text: 'Restaurant has been approved successfully.',
+        icon: 'success',
+        timer: 2000,
+        timerProgressBar: true,
+        showConfirmButton: false,
+      });
+    } catch (e) {
+      const errorMessage = e instanceof Error ? e.message : 'Failed to approve restaurant';
+      await Swal.fire({
+        title: 'Error!',
+        text: errorMessage,
+        icon: 'error',
+        confirmButtonColor: '#EF4444',
+      });
+    } finally {
+      setActionLoading(false);
+      Swal.close();
+    }
+  };
+
+  // Reject functionality has been removed as per requirements
+  // const rejectRestaurant = async () => {
+  //   if (!vendor) return;
+    
+  //   const { value: reviewNotes, isDismissed } = await MySwal.fire({
+  //     title: 'Reject Restaurant',
+  //     text: 'Please provide a reason for rejection:',
+  //     input: 'textarea',
+  //     inputPlaceholder: 'Enter reason for rejection...',
+  //     inputAttributes: {
+  //       'aria-label': 'Enter reason for rejection'
+  //     },
+  //     showCancelButton: true,
+  //     confirmButtonColor: '#EF4444',
+  //     cancelButtonColor: '#6B7280',
+  //     confirmButtonText: 'Reject',
+  //     cancelButtonText: 'Cancel',
+  //     reverseButtons: true,
+  //     inputValidator: (value) => {
+  //       if (!value) {
+  //         return 'You need to provide a reason for rejection!';
+  //       }
+  //     },
+  //     customClass: {
+  //       confirmButton: 'mr-2',
+  //     },
+  //   });
+
+  //   if (isDismissed || !reviewNotes) return;
+    
+  //   setActionLoading(true);
+  //   showLoading();
+    
+  //   try {
+  //     await apiServices.rejectRestaurant(vendor.id, reviewNotes);
+  //     const refreshed = await apiServices.getVendor(vendor.id);
+  //     setVendor(refreshed as Vendor);
+      
+  //     await MySwal.fire({
+  //       title: 'Rejected!',
+  //       text: 'Restaurant has been rejected.',
+  //       icon: 'info',
+  //       timer: 2000,
+  //       timerProgressBar: true,
+  //       showConfirmButton: false,
+  //     });
+  //   } catch (e) {
+  //     const errorMessage = e instanceof Error ? e.message : 'Failed to reject restaurant';
+  //     await MySwal.fire({
+  //       title: 'Error!',
+  //       text: errorMessage,
+  //       icon: 'error',
+  //       confirmButtonColor: '#EF4444',
+  //     });
+  //   } finally {
+  //     setActionLoading(false);
+  //     Swal.close();
+  //   }
+  // };
+
+  const suspendRestaurant = async () => {
+    if (!vendor) return;
+    
+    const isSuspending = vendor.status !== 'Suspended';
+    const action = isSuspending ? 'suspend' : 'unsuspend';
+    const actionTitle = isSuspending ? 'Suspend' : 'Unsuspend';
+    
+    const result = await Swal.fire({
+      title: `${actionTitle} Restaurant`,
+      text: `Are you sure you want to ${action} ${vendor.name}?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: isSuspending ? '#F59E0B' : '#10B981',
+      cancelButtonColor: '#6B7280',
+      confirmButtonText: `Yes, ${action} it!`,
+      cancelButtonText: 'Cancel',
+      reverseButtons: true,
+      customClass: {
+        confirmButton: 'mr-2',
+      },
+    });
+
+    if (!result.isConfirmed) return;
+    
+    setActionLoading(true);
+    showLoading();
+    
+    try {
+      await apiServices.suspendRestaurant(vendor.id);
+      const refreshed = await apiServices.getVendor(vendor.id);
+      setVendor(refreshed as Vendor);
+      
+      await Swal.fire({
+        title: `${actionTitle}ed!`,
+        text: `Restaurant has been ${action}ed successfully.`,
+        icon: 'success',
+        timer: 2000,
+        timerProgressBar: true,
+        showConfirmButton: false,
+      });
+    } catch (e) {
+      const errorMessage = e instanceof Error ? e.message : `Failed to ${action} restaurant`;
+      await Swal.fire({
+        title: 'Error!',
+        text: errorMessage,
+        icon: 'error',
+        confirmButtonColor: '#EF4444',
+      });
+    } finally {
+      setActionLoading(false);
+      Swal.close();
+    }
+  };
+
+  // Delete functionality has been removed as per requirements
+  // const deleteRestaurant = async () => {
+  //   if (!vendor) return;
+    
+  //   const result = await MySwal.fire({
+  //     title: 'Delete Restaurant',
+  //     text: `Are you sure you want to delete ${vendor.name}? This action cannot be undone!`,
+  //     icon: 'warning',
+  //     showCancelButton: true,
+  //     confirmButtonColor: '#EF4444',
+  //     cancelButtonColor: '#6B7280',
+  //     confirmButtonText: 'Yes, delete it!',
+  //     cancelButtonText: 'Cancel',
+  //     reverseButtons: true,
+  //     customClass: {
+  //       confirmButton: 'mr-2',
+  //     },
+  //   });
+
+  //   if (!result.isConfirmed) return;
+    
+  //   setActionLoading(true);
+  //   showLoading();
+    
+  //   try {
+  //     await apiServices.deleteRestaurant(vendor.id);
+      
+  //     await MySwal.fire({
+  //       title: 'Deleted!',
+  //       text: 'Restaurant has been deleted.',
+  //       icon: 'success',
+  //       timer: 2000,
+  //       timerProgressBar: true,
+  //       showConfirmButton: false,
+  //       willClose: () => {
+  //         navigate("/vendors");
+  //       }
+  //     });
+  //   } catch (e) {
+  //     const errorMessage = e instanceof Error ? e.message : 'Failed to delete restaurant';
+  //     await MySwal.fire({
+  //       title: 'Error!',
+  //       text: errorMessage,
+  //       icon: 'error',
+  //       confirmButtonColor: '#EF4444',
+  //     });
+  //   } finally {
+  //     setActionLoading(false);
+  //     Swal.close();
+  //   }
+  // };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <DeliveryLoader label="Fetching restaurant" />
+      </div>
+    );
+  }
+
+  if (!vendor) {
+    return (
+      <div className="space-y-6">
+        <Button variant="outline" onClick={() => navigate(-1)}>
+          <ArrowLeft className="mr-2 h-4 w-4" /> Back
+        </Button>
+        <p className="text-muted-foreground">Restaurant not found.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* Vendor Header Card */}
+      <div className="flex items-center justify-between">
+        <Button variant="outline" onClick={() => navigate(-1)}>
+          <ArrowLeft className="mr-2 h-4 w-4" /> Back
+        </Button>
+      </div>
+
       <Card>
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
@@ -108,288 +362,268 @@ export default function VendorDetails() {
                 <Building2 className="h-8 w-8 text-white" />
               </div>
               <div className="flex items-center gap-3">
-                <Badge className={`px-3 py-1 ${getStatusColor(vendor.status)}`}>
-                  {vendor.status}
-                </Badge>
+                <Badge className={`px-3 py-1 ${getStatusBadgeClass(vendor.status)}`}>{vendor.status}</Badge>
                 <h2 className="text-xl font-semibold">{vendor.name}</h2>
               </div>
             </div>
             <div className="flex gap-2">
-              <Button 
-                className="bg-green-500 hover:bg-green-600 text-white"
-                onClick={() => setModalState({ open: true, action: "approve" })}
-              >
-                Approve
-              </Button>
-              <Button 
-                variant="destructive"
-                onClick={() => setModalState({ open: true, action: "reject" })}
+              {vendor.status !== 'Active' && (
+                <Button 
+                  onClick={approveRestaurant} 
+                  disabled={actionLoading} 
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  Approve
+                </Button>
+              )}
+              {/* Reject button removed as per requirements */}
+              {/* <Button 
+                onClick={rejectRestaurant} 
+                disabled={actionLoading} 
+                className="bg-yellow-600 hover:bg-yellow-700 text-white"
               >
                 Reject
-              </Button>
+              </Button> */}
               <Button 
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-                onClick={() => setModalState({ open: true, action: "suspend" })}
+                onClick={suspendRestaurant} 
+                disabled={actionLoading} 
+                variant="outline"
+                className="border-red-500 text-red-600 hover:bg-red-50"
               >
-                Suspend
+                {vendor.status === 'Suspended' ? 'Unsuspend' : 'Suspend'}
               </Button>
+              {/* Delete button removed as per requirements */}
+              {/* <Button 
+                onClick={deleteRestaurant} 
+                disabled={actionLoading} 
+                variant="destructive"
+              >
+                Delete
+              </Button> */}
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Profile Information */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <img src={profileIcon} alt="Profile" className="w-5 h-5" />
-            <div>
-              <CardTitle>Profile Information</CardTitle>
-              <p className="text-sm text-muted-foreground">Lorem ipsum dolor sit amet, consectetur adipiscing elit</p>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-4 gap-8">
-            <div>
-              <p className="text-sm text-muted-foreground mb-1">Business Name</p>
-              <p className="font-medium">{vendor.businessName}</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground mb-1">Vendor ID</p>
-              <p className="font-medium">{vendor.vendorId}</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground mb-1">Category</p>
-              <p className="font-medium">{vendor.category}</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground mb-1">Business Address</p>
-              <p className="font-medium">{vendor.businessAddress}</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-6">
-            <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center shrink-0">
-              <span className="text-white font-semibold text-lg">A</span>
-            </div>
-            <div className="grid grid-cols-3 gap-8 flex-1">
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Name</p>
-                <p className="font-medium">{vendor.contactPerson.name}</p>
+      <div className="space-y-6">
+        {/* Basic Information Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Basic Information</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Business Name</p>
+                <p className="text-sm">{vendor.name}</p>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Email</p>
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Category</p>
+                <p className="text-sm capitalize">{vendor.category || 'N/A'}</p>
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Email</p>
                 <div className="flex items-center gap-2">
-                  <p className="font-medium">{vendor.contactPerson.email}</p>
                   <Mail className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm">{vendor.email || 'N/A'}</span>
                 </div>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Phone Number</p>
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Phone</p>
                 <div className="flex items-center gap-2">
-                  <p className="font-medium">{vendor.contactPerson.phone}</p>
                   <Phone className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm">{vendor.phone_number || vendor.phone || 'N/A'}</span>
                 </div>
               </div>
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Status</p>
+                <Badge className={getStatusBadgeClass(vendor.status)}>
+                  {vendor.status}
+                </Badge>
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Approval Status</p>
+                <Badge variant={vendor.is_approved ? 'default' : 'secondary'}>
+                  {vendor.is_approved ? 'Approved' : 'Pending Approval'}
+                </Badge>
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Business Status</p>
+                <Badge variant={vendor.is_open ? 'default' : 'secondary'}>
+                  {vendor.is_open ? 'Open' : 'Closed'}
+                </Badge>
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Suspension Status</p>
+                <Badge variant={vendor.is_suspended ? 'destructive' : 'default'}>
+                  {vendor.is_suspended ? 'Suspended' : 'Active'}
+                </Badge>
+              </div>
             </div>
-            <div className="text-right shrink-0">
-              <p className="text-sm text-muted-foreground mb-1">Document</p>
-              <Button variant="link" className="h-auto p-0 text-blue-600">
-                Certificate & Licenses
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+            
+            {vendor.description && (
+              <div className="space-y-2 pt-2">
+                <p className="text-sm font-medium text-muted-foreground">Description</p>
+                <p className="text-sm text-foreground">{vendor.description}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-      {/* Performance Stats */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center">
-              <BarChart3 className="h-4 w-4 text-white" />
-            </div>
-            <div>
-              <CardTitle>Performance Stats</CardTitle>
-              <p className="text-sm text-muted-foreground">Lorem ipsum dolor sit amet, consectetur adipiscing elit</p>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-5 gap-8">
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center">
-                  <DollarSign className="h-4 w-4 text-white" />
-                </div>
-                <p className="text-sm font-medium">Sales Volume</p>
+        {/* Business Details Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Business Details</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Business Registration Number</p>
+                <p className="text-sm">{vendor.business_registration_number || 'N/A'}</p>
               </div>
-              <p className="text-2xl font-bold mb-2">{vendor.performance.salesVolume}</p>
-              <div className="flex items-center gap-1">
-                <TrendingUp className="h-3 w-3 text-green-500" />
-                <span className="text-xs bg-gray-100 px-2 py-1 rounded">Last 30 Days</span>
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Tax ID</p>
+                <p className="text-sm">{vendor.tax_id || 'N/A'}</p>
               </div>
-            </div>
-            
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center">
-                  <BarChart3 className="h-4 w-4 text-white" />
-                </div>
-                <p className="text-sm font-medium">Total Orders Completed</p>
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Business Entity Type</p>
+                <p className="text-sm">{vendor.business_entity_type || 'N/A'}</p>
               </div>
-              <p className="text-2xl font-bold mb-2">{vendor.performance.totalOrders.toLocaleString()}</p>
-              <div className="flex items-center gap-1">
-                <TrendingUp className="h-3 w-3 text-green-500" />
-                <span className="text-xs bg-gray-100 px-2 py-1 rounded">All-Time Orders</span>
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Created At</p>
+                <p className="text-sm">{vendor.created_at ? new Date(vendor.created_at).toLocaleString() : 'N/A'}</p>
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Last Updated</p>
+                <p className="text-sm">{vendor.updated_at ? new Date(vendor.updated_at).toLocaleString() : 'N/A'}</p>
               </div>
             </div>
-            
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center">
-                  <TrendingDown className="h-4 w-4 text-white" />
-                </div>
-                <p className="text-sm font-medium">Cancellation Rate</p>
-              </div>
-              <p className="text-2xl font-bold text-green-500 mb-2">{vendor.performance.cancellationRate}</p>
-              <div className="flex items-center gap-1">
-                <TrendingUp className="h-3 w-3 text-green-500" />
-                <span className="text-xs bg-gray-100 px-2 py-1 rounded">of total orders</span>
-              </div>
-            </div>
-            
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center">
-                  <Clock className="h-4 w-4 text-white" />
-                </div>
-                <p className="text-sm font-medium">Avg. Delivery Time</p>
-              </div>
-              <p className="text-2xl font-bold text-yellow-500 mb-2">{vendor.performance.avgDeliveryTime}</p>
-              <div className="flex items-center gap-1">
-                <span className="h-3 w-3 text-yellow-500">↓</span>
-                <span className="text-xs bg-gray-100 px-2 py-1 rounded">Across 312 orders</span>
-              </div>
-            </div>
-            
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center">
-                  <Star className="h-4 w-4 text-white" />
-                </div>
-                <p className="text-sm font-medium">Customer Rating</p>
-              </div>
-              <p className="text-2xl font-bold text-green-500 mb-2">{vendor.performance.customerRating}</p>
-              <div className="flex items-center gap-1">
-                <span className="text-xs bg-gray-100 px-2 py-1 rounded">Based on 540 reviews</span>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      {/* Financial Settings */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center">
-              <DollarSign className="h-4 w-4 text-white" />
-            </div>
-            <div>
-              <CardTitle>Financial Settings</CardTitle>
-              <p className="text-sm text-muted-foreground">Lorem ipsum dolor sit amet, consectetur adipiscing elit</p>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-2 gap-8">
-            <div>
-              <p className="text-sm text-muted-foreground mb-3">Commission Rate (%)</p>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-lg font-semibold mb-1">{vendor.financial.commissionRate}</p>
-                  <p className="text-xs text-muted-foreground flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-gray-400"></span>
-                    Applied on all orders
-                  </p>
-                </div>
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white">Edit</Button>
+        {/* Documents Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Business Documents</CardTitle>
+            <p className="text-sm text-muted-foreground">Documents provided by the business</p>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Business Registration Certificate</p>
+                {vendor.business_registration_certificate ? (
+                  <a 
+                    href={vendor.business_registration_certificate} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+                  >
+                    <span>View Document</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                      <polyline points="15 3 21 3 21 9"></polyline>
+                      <line x1="10" y1="14" x2="21" y2="3"></line>
+                    </svg>
+                  </a>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Not provided</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Owner's Valid ID</p>
+                {vendor.restaurant_owner_valid_id ? (
+                  <a 
+                    href={vendor.restaurant_owner_valid_id} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+                  >
+                    <span>View Document</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                      <polyline points="15 3 21 3 21 9"></polyline>
+                      <line x1="10" y1="14" x2="21" y2="3"></line>
+                    </svg>
+                  </a>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Not provided</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Proof of Business Operation</p>
+                {vendor.proof_of_business_operation ? (
+                  <a 
+                    href={vendor.proof_of_business_operation} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+                  >
+                    <span>View Document</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                      <polyline points="15 3 21 3 21 9"></polyline>
+                      <line x1="10" y1="14" x2="21" y2="3"></line>
+                    </svg>
+                  </a>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Not provided</p>
+                )}
               </div>
             </div>
-            
-            <div>
-              <p className="text-sm text-muted-foreground mb-3">Payout Threshold (₦)</p>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-lg font-semibold mb-1">{vendor.financial.payoutThreshold}</p>
-                  <p className="text-xs text-muted-foreground flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-gray-400"></span>
-                    Vendors receive payout once balance exceeds threshold
-                  </p>
-                </div>
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white">Edit</Button>
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-6 pt-4 border-t">
-            <div className="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center shrink-0">
-              <DollarSign className="h-5 w-5 text-white" />
-            </div>
-            <div className="grid grid-cols-3 gap-8 flex-1">
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Last Payout</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Date</p>
-                <p className="font-medium">{vendor.financial.lastPayout.date}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Amount</p>
-                <p className="font-medium">{vendor.financial.lastPayout.amount}</p>
-              </div>
-            </div>
-            <div className="shrink-0">
-              <p className="text-sm text-muted-foreground mb-1">Action</p>
-              <Button variant="link" className="h-auto p-0 text-blue-600">
-                View Payout History
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      {modalState.action && (
-        <VendorActionModal
-          vendor={{
-            id: vendor.id,
-            name: vendor.name,
-            category: vendor.category,
-            salesVolume: vendor.performance.salesVolume,
-            status: vendor.status,
-            rating: parseFloat(vendor.performance.customerRating.split(' ')[0]),
-            lastLogin: "2 hours ago",
-            joinedOn: "Jan 15, 2024"
-          }}
-          action={modalState.action}
-          open={modalState.open}
-          onClose={() => setModalState({ open: false, action: null })}
-        />
-      )}
+        {/* Locations Section */}
+        {vendor.locations && vendor.locations.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Business Locations</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {vendor.locations.map((location, index) => (
+                  <div key={index} className="border rounded-lg p-4">
+                    <h4 className="font-medium mb-2">Location {index + 1}</h4>
+                    <div className="space-y-1 text-sm">
+                      {location.address_line1 && <p>{location.address_line1}</p>}
+                      {location.address_line2 && <p>{location.address_line2}</p>}
+                      <p className="text-muted-foreground">
+                        {[location.city, location.state, location.country]
+                          .filter(Boolean)
+                          .join(', ')}
+                      </p>
+                      {location.postal_code && <p className="text-muted-foreground">{location.postal_code}</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-      {settingsModal.type && (
-        <VendorSettingsModal
-          vendor={{
-            id: vendor.id,
-            name: vendor.name
-          }}
-          type={settingsModal.type}
-          open={settingsModal.open}
-          onClose={() => setSettingsModal({ open: false, type: null })}
-        />
-      )}
+        {/* Operating Hours Section */}
+        {vendor.operating_hours && vendor.operating_hours.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Operating Hours</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {vendor.operating_hours.map((hours, index) => (
+                  <div key={index} className="flex justify-between items-center py-2 border-b last:border-b-0">
+                    <span className="font-medium">{hours.day}:</span>
+                    <span className="text-sm text-muted-foreground">
+                      {hours.is_closed 
+                        ? 'Closed' 
+                        : `${hours.opening_time} - ${hours.closing_time}`}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }

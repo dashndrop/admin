@@ -3,8 +3,10 @@ const API_BASE_URL = import.meta.env.DEV
   ? '/api/v1'  // Use proxy in development
   : 'https://dashndrop.onrender.com/api/v1';  // Direct URL in production
 
+const ITEMS_PER_PAGE = 10;
+
 // API Client
-class ApiClient {
+export class ApiClient {
   private baseURL: string;
   private token: string | null = null;
 
@@ -19,13 +21,16 @@ class ApiClient {
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
     
+    // Don't include token for login and token refresh endpoints
+    const isAuthEndpoint = ['/admin/login', '/users/refresh-token'].some(path => endpoint.startsWith(path));
+    
     const config: RequestInit = {
       method: options.method || 'GET',
       headers: {
         'Content-Type': 'application/json',
         'client-id': 'admin', // Admin client type
         'Accept': 'application/json',
-        ...(this.token && { Authorization: `Bearer ${this.token}` }),
+        ...(!isAuthEndpoint && this.token && { Authorization: `Bearer ${this.token}` }),
         ...options.headers,
       },
       mode: 'cors', // Explicitly set CORS mode
@@ -36,17 +41,21 @@ class ApiClient {
     try {
       const response = await fetch(url, config);
       
-      // Handle empty responses
-      const text = await response.text();
-      if (!text) {
-        return {} as T;
+      // Handle 401 Unauthorized - token is invalid or expired
+      if (response.status === 401) {
+        this.logout();
+        // Only redirect if we're not already on the login page
+        if (!window.location.pathname.includes('/login')) {
+          window.location.href = '/login';
+        }
+        throw new Error('Your session has expired. Please log in again.');
       }
       
-      const data = JSON.parse(text);
-      
       if (!response.ok) {
-        let errorMessage: string = `HTTP ${response.status}`;
+        const data = await response.json().catch(() => ({}));
+        let errorMessage = 'An error occurred';
         const detail = (data as any)?.detail;
+        
         if (Array.isArray(detail)) {
           errorMessage = detail.map((d: any) => d?.msg || d?.message || JSON.stringify(d)).join("; ");
         } else if (typeof detail === 'object' && detail !== null) {
@@ -59,9 +68,15 @@ class ApiClient {
         throw new Error(errorMessage);
       }
       
-      return data;
+      const data = await response.json().catch(() => ({}));
+      return data as T;
     } catch (error) {
       console.error('API Request failed:', error);
+      // Only redirect for 401 errors that weren't already handled
+      if (error.message.includes('401') && !window.location.pathname.includes('/login')) {
+        this.logout();
+        window.location.href = '/login';
+      }
       throw error;
     }
   }
@@ -69,32 +84,39 @@ class ApiClient {
   // Authentication
   async login(username: string, password: string) {
     try {
-      const response = await this.request<{
-        access_token: string;
-        token_type: string;
-        admin_id: string;
-      }>('/admin/login', {
+      // Create form data for x-www-form-urlencoded
+      const formData = new URLSearchParams();
+      formData.append('grant_type', 'password');
+      formData.append('username', username);
+      formData.append('password', password);
+      formData.append('scope', '');
+      formData.append('client_id', 'admin');
+      formData.append('client_secret', 'admin_secret');
+
+      // Make the login request with form-urlencoded content type
+      const response = await fetch(`${this.baseURL}/admin/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
+          'Accept': 'application/json',
         },
-        body: new URLSearchParams({
-          grant_type: 'password',
-          username: username,
-          password: password,
-          scope: '',
-          client_id: 'admin',
-          client_secret: 'admin_secret'
-        }).toString(),
+        body: formData.toString(),
       });
 
-      console.log('Login response:', response);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Login failed');
+      }
 
-      this.token = response.access_token;
-      localStorage.setItem('admin_token', response.access_token);
-      localStorage.setItem('admin_id', response.admin_id);
+      const data = await response.json();
       
-      return response;
+      // Store tokens
+      this.token = data.access_token;
+      localStorage.setItem('admin_token', data.access_token);
+      localStorage.setItem('admin_id', data.admin_id);
+      
+      console.log('Login successful for user:', username);
+      return data;
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -163,7 +185,8 @@ class ApiClient {
   }
 
   async getRestaurant(id: string) {
-    return this.request(`/admin/restaurant/${id}`);
+    // Backend details endpoint per docs: /api/v1/admin/restaurant/{restaurant_id}/details
+    return this.request(`/admin/restaurant/${id}/details`);
   }
 
   // Restaurant Management Actions
@@ -239,10 +262,241 @@ class ApiClient {
       method: 'POST'
     });
   }
+
+  // Notifications
+  async getNotifications(params?: {
+    page?: number;
+    page_size?: number;
+    unread_only?: boolean;
+    type?: string;
+  }) {
+    const query = params
+      ? `?${new URLSearchParams(
+          Object.entries(params)
+            .filter(([_, v]) => v !== undefined && v !== null && v !== '')
+            .map(([k, v]) => [k, String(v)])
+            .reduce((acc, [k, v]) => ({
+              ...acc,
+              [k]: v
+            }), {} as Record<string, string>)
+        ).toString()}`
+      : '';
+    return this.request<{
+      items: Notification[];
+      total: number;
+      page: number;
+      page_size: number;
+      total_pages: number;
+    }>(`/admin/notifications${query}`);
+  }
+
+  async markNotificationAsRead(notificationId: string) {
+    return this.request(`/admin/notifications/${notificationId}/read`, {
+      method: 'PATCH',
+    });
+  }
+
+  async markAllNotificationsAsRead() {
+    return this.request('/admin/notifications/mark-all-read', {
+      method: 'PATCH',
+    });
+  }
+
+  // Waitlist Management
+  async getWaitlist(params?: WaitlistFilterParams): Promise<WaitlistResponse> {
+    const query = new URLSearchParams();
+    
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) {
+          query.append(key, String(value));
+        }
+      });
+    }
+    
+    return this.request<WaitlistResponse>(`/admin/waitlist?${query.toString()}`);
+  }
+
+  async getWaitlistStats(): Promise<WaitlistStats> {
+    return this.request<WaitlistStats>('/admin/waitlist/stats');
+  }
+
+  async updateWaitlistStatus(id: string, status: 'approved' | 'rejected' | 'pending'): Promise<void> {
+    return this.request(`/admin/waitlist/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status })
+    });
+  }
+
+  async addToWaitlist(entry: Omit<WaitlistEntry, '_id' | 'status' | 'createdAt' | 'updatedAt'>): Promise<WaitlistEntry> {
+    return this.request<WaitlistEntry>('/admin/waitlist', {
+      method: 'POST',
+      body: JSON.stringify(entry)
+    });
+  }
+
+  async removeFromWaitlist(id: string): Promise<void> {
+    return this.request(`/admin/waitlist/${id}`, {
+      method: 'DELETE'
+    });
+  }
+
+  // User Management
+  async getUsers(params?: UserFilterParams) {
+    try {
+      const queryParams = new URLSearchParams();
+      
+      // Add only defined parameters to the query
+      if (params) {
+        Object.entries(params).forEach(([key, value]) => {
+          if (value !== undefined && value !== null && value !== '') {
+            queryParams.append(key, String(value));
+          }
+        });
+      }
+      
+      const url = `/admin/users${queryParams.toString() ? `?${queryParams}` : ''}`;
+      console.log('Fetching users from:', url);
+      
+      const response = await fetch(`${this.baseURL}${url}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(this.token && { 'Authorization': `Bearer ${this.token}` }),
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to fetch users');
+      }
+
+      const data = await response.json();
+      console.log('Users API response:', data);
+      
+      // Transform the response to match the expected structure
+      return {
+        users: Array.isArray(data) ? data : [],
+        total: data.total || (Array.isArray(data) ? data.length : 0),
+        page: data.page || 1,
+        per_page: data.per_page || ITEMS_PER_PAGE,
+        total_pages: data.total_pages || 1,
+      };
+    } catch (error) {
+      console.error('Error in getUsers:', error);
+      throw error;
+    }
+  }
+
+  async getUser(userId: string) {
+    return this.request<User>(`/admin/users/${userId}`);
+  }
+
+  async updateUser(userId: string, data: Partial<User>) {
+    return this.request<User>(`/admin/users/${userId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteUser(userId: string) {
+    return this.request(`/admin/users/${userId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async toggleUserStatus(userId: string, isActive: boolean) {
+    return this.request<User>(`/admin/users/${userId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ is_active: isActive }),
+    });
+  }
 }
 
 // Create API instance
 export const api = new ApiClient(API_BASE_URL);
+
+// User Management Types
+export interface User {
+  _id: string;
+  full_name: string;
+  email: string;
+  phone_number: string;
+  is_active: boolean;
+  is_verified: boolean;
+  created_at: string;
+  updated_at: string;
+  last_login?: string;
+  profile_picture?: string;
+  address?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    postal_code?: string;
+  };
+  preferences?: {
+    notifications_enabled: boolean;
+    language: string;
+    theme: 'light' | 'dark' | 'system';
+  };
+  [key: string]: any;
+}
+
+export interface UsersResponse {
+  users: User[];
+  total: number;
+  page: number;
+  per_page: number;
+  total_pages: number;
+}
+
+export interface UserFilterParams {
+  page?: number;
+  per_page?: number;
+  search?: string;
+  is_active?: boolean;
+  is_verified?: boolean;
+  sort_by?: string;
+  sort_order?: 'asc' | 'desc';
+  [key: string]: any;
+}
+
+// Waitlist Types
+export interface WaitlistEntry {
+  id: string;
+  email: string;
+  created_at: string;
+  status?: 'pending' | 'approved' | 'rejected';
+  first_name?: string;
+  last_name?: string;
+  phone_number?: string;
+  updated_at?: string;
+}
+
+export interface WaitlistResponse {
+  entries: WaitlistEntry[];
+  total: number;
+  page: number;
+  per_page: number;
+  total_pages: number;
+}
+
+export interface WaitlistStats {
+  total: number;
+  pending: number;
+  approved: number;
+  rejected: number;
+}
+
+export type WaitlistFilterParams = {
+  page?: number;
+  per_page?: number;
+  search?: string;
+  status?: 'pending' | 'approved' | 'rejected';
+  sort_by?: string;
+  sort_order?: 'asc' | 'desc';
+};
 
 // API Types
 export interface LoginRequest {
@@ -272,4 +526,16 @@ export interface AdminProfile {
   role: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  is_read: boolean;
+  created_at: string;
+  read_at: string | null;
+  metadata?: Record<string, any>;
+  action_url?: string;
 }

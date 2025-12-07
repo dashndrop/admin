@@ -25,6 +25,7 @@ import Analytics from "./pages/Analytics";
 import Security from "./pages/Security";
 import AdminView from "./pages/AdminView";
 import Notifications from "./pages/Notifications";
+import Waitlist from "./pages/Waitlist";
 import Login from "./pages/Login";
 import VerifyIdentity from "./pages/VerifyIdentity";
 import ResetPassword from "./pages/ResetPassword";
@@ -177,6 +178,13 @@ const App = () => (
             <ProtectedRoute>
               <AdminLayout>
                 <Notifications />
+              </AdminLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/waitlist" element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <Waitlist />
               </AdminLayout>
             </ProtectedRoute>
           } />

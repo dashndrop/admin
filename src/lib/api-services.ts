@@ -108,22 +108,37 @@ export const apiServices = {
   // Restaurant Management Actions
   async approveRestaurant(restaurantId: string) {
     try {
-      const result = await api.approveRestaurant(restaurantId);
-      console.log('Restaurant approved:', result);
-      return result;
+      const response = await api.request(`/admin/restaurant/${restaurantId}/approve`, {
+        method: 'POST'
+      });
+      return response;
     } catch (error) {
-      console.error('Failed to approve restaurant:', error);
+      console.error('Error approving restaurant:', error);
       throw error;
     }
   },
 
   async suspendRestaurant(restaurantId: string) {
     try {
-      const result = await api.suspendRestaurant(restaurantId);
-      console.log('Restaurant suspended:', result);
-      return result;
+      const response = await api.request(`/admin/restaurant/${restaurantId}/suspend`, {
+        method: 'POST'
+      });
+      return response;
     } catch (error) {
-      console.error('Failed to suspend restaurant:', error);
+      console.error('Error suspending restaurant:', error);
+      throw error;
+    }
+  },
+
+  async rejectRestaurant(restaurantId: string, reviewNotes: string = '') {
+    try {
+      const response = await api.request(`/admin/restaurant/${restaurantId}/reject`, {
+        method: 'POST',
+        body: JSON.stringify({ review_notes: reviewNotes })
+      });
+      return response;
+    } catch (error) {
+      console.error('Error rejecting restaurant:', error);
       throw error;
     }
   },

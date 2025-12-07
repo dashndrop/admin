@@ -19,6 +19,7 @@ const menuItems = [
   // { title: "Dashboard", url: "/" },
   { title: "Vendors", url: "/vendors" },
   { title: "Users", url: "/users" },
+  { title: "Waitlist", url: "/waitlist" },
   { title: "Riders", url: "/riders" },
   { title: "Orders & Deliveries", url: "/orders" },
   { title: "Support Tickets", url: "/support" },
