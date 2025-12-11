@@ -1,7 +1,5 @@
 // API Configuration
-const API_BASE_URL = import.meta.env.DEV 
-  ? '/api/v1'  // Use proxy in development
-  : 'https://dashndrop.onrender.com/api/v1';  // Direct URL in production
+const API_BASE_URL = '/api/v1';
 
 const ITEMS_PER_PAGE = 10;
 
