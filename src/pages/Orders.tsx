@@ -15,17 +15,18 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { 
-  Package, 
-  Search, 
-  Filter, 
-  SortAsc, 
+import {
+  Package,
+  Search,
+  Filter,
+  SortAsc,
   Eye,
   ChevronRight,
   X
 } from "lucide-react";
 import { PaginationControls } from "@/components/ui/pagination-controls";
 import { apiServices } from "@/lib/api-services";
+import { formatCurrency } from "@/lib/utils";
 import { DeliveryLoader } from "@/components/ui/delivery-loader";
 
 const Orders = () => {
@@ -43,116 +44,12 @@ const Orders = () => {
   });
   const ordersData = (ordersResp?.list as any[]) || [];
 
-  const disputesData = [
-    {
-      disputeId: "DISP-101",
-      orderId: "ORD-884",
-      user: "U-120 Mariam Ajani",
-      vendor: "Chicken Republic",
-      issue: "Missing Item",
-      status: "Open",
-      statusColor: "yellow"
-    },
-    {
-      disputeId: "DISP-101",
-      orderId: "ORD-884",
-      user: "U-120 Mariam Ajani",
-      vendor: "Medplus Pharmacy",
-      issue: "Rider Late",
-      status: "Resolved",
-      statusColor: "green"
-    },
-    {
-      disputeId: "DISP-101",
-      orderId: "ORD-884",
-      user: "U-120 Mariam Ajani",
-      vendor: "Medplus Pharmacy",
-      issue: "Rider Late",
-      status: "Resolved",
-      statusColor: "green"
-    },
-    {
-      disputeId: "DISP-101",
-      orderId: "ORD-884",
-      user: "U-120 Mariam Ajani",
-      vendor: "Medplus Pharmacy",
-      issue: "Rider Late",
-      status: "Resolved",
-      statusColor: "green"
-    },
-    {
-      disputeId: "DISP-101",
-      orderId: "ORD-884",
-      user: "U-120 Mariam Ajani",
-      vendor: "Medplus Pharmacy",
-      issue: "Rider Late",
-      status: "Resolved",
-      statusColor: "green"
-    },
-    {
-      disputeId: "DISP-101",
-      orderId: "ORD-884",
-      user: "U-120 Mariam Ajani",
-      vendor: "Medplus Pharmacy",
-      issue: "Rider Late",
-      status: "Resolved",
-      statusColor: "green"
-    },
-    {
-      disputeId: "DISP-101",
-      orderId: "ORD-884",
-      user: "U-120 Mariam Ajani",
-      vendor: "Medplus Pharmacy",
-      issue: "Rider Late",
-      status: "Resolved",
-      statusColor: "green"
-    },
-    {
-      disputeId: "DISP-101",
-      orderId: "ORD-884",
-      user: "U-120 Mariam Ajani",
-      vendor: "Chicken Republic",
-      issue: "Missing Item",
-      status: "Open",
-      statusColor: "yellow"
-    },
-    {
-      disputeId: "DISP-101",
-      orderId: "ORD-884",
-      user: "U-120 Mariam Ajani",
-      vendor: "Chicken Republic",
-      issue: "Missing Item",
-      status: "Open",
-      statusColor: "yellow"
-    },
-    {
-      disputeId: "DISP-101",
-      orderId: "ORD-884",
-      user: "U-120 Mariam Ajani",
-      vendor: "Chicken Republic",
-      issue: "Missing Item",
-      status: "Open",
-      statusColor: "yellow"
-    },
-    {
-      disputeId: "DISP-101",
-      orderId: "ORD-884",
-      user: "U-120 Mariam Ajani",
-      vendor: "Chicken Republic",
-      issue: "Missing Item",
-      status: "Open",
-      statusColor: "yellow"
-    },
-    {
-      disputeId: "DISP-101",
-      orderId: "ORD-884",
-      user: "U-120 Mariam Ajani",
-      vendor: "Chicken Republic",
-      issue: "Missing Item",
-      status: "Open",
-      statusColor: "yellow"
-    }
-  ];
+  const { data: disputesResp, isLoading: disputesLoading } = useQuery({
+    queryKey: ["disputes", currentPage],
+    queryFn: () => apiServices.getDisputes({ page: currentPage, page_size: 10 }),
+    enabled: activeTab === "disputes"
+  });
+  const disputesData = disputesResp?.list || [];
 
   const getStatusDot = (color: string) => {
     const colorClasses = {
@@ -183,49 +80,55 @@ const Orders = () => {
         </div>
         <div>
           <h1 className="text-2xl font-bold">Orders & Deliveries</h1>
-          <p className="text-muted-foreground">Lorem ipsum dolor sit amet, consectetur adipiscing elit</p>
+          <p className="text-muted-foreground">Manage and track all customer orders and delivery disputes</p>
         </div>
       </div>
 
-          {/* Stats Cards */}
+      {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card>
+        <Card>
           <CardContent className="p-4">
             <CardTitle className="text-sm text-muted-foreground">All Orders</CardTitle>
-            <p className="text-2xl font-bold mt-1">50K</p>
-              </CardContent>
-            </Card>
-            <Card>
+            <p className="text-2xl font-bold mt-1">{ordersResp?.meta?.total || 0}</p>
+          </CardContent>
+        </Card>
+        <Card>
           <CardContent className="p-4">
             <CardTitle className="text-sm text-muted-foreground">Delivered</CardTitle>
-            <p className="text-2xl font-bold mt-1">48k</p>
-              </CardContent>
-            </Card>
-            <Card>
+            <p className="text-2xl font-bold mt-1">
+              {ordersData.filter((o: any) => o.status === 'delivered' || o.status === 'completed').length}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
           <CardContent className="p-4">
             <CardTitle className="text-sm text-muted-foreground">Cancelled</CardTitle>
-            <p className="text-2xl font-bold mt-1">1,000</p>
-              </CardContent>
-            </Card>
-            <Card>
+            <p className="text-2xl font-bold mt-1">
+              {ordersData.filter((o: any) => o.status === 'cancelled').length}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
           <CardContent className="p-4">
             <CardTitle className="text-sm text-muted-foreground">Ongoing</CardTitle>
-            <p className="text-2xl font-bold mt-1">20</p>
-              </CardContent>
-            </Card>
-          </div>
+            <p className="text-2xl font-bold mt-1">
+              {ordersData.filter((o: any) => o.status === 'in_transit' || o.status === 'pending').length}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Tabs and Search */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <div className="flex items-center justify-between">
           <TabsList className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
-            <TabsTrigger 
+            <TabsTrigger
               value="orders"
               className="data-[state=active]:bg-[#F28C28] data-[state=active]:text-white"
             >
               Orders
             </TabsTrigger>
-            <TabsTrigger 
+            <TabsTrigger
               value="disputes"
               className="data-[state=active]:bg-[#F28C28] data-[state=active]:text-white"
             >
@@ -246,16 +149,16 @@ const Orders = () => {
               Sort
             </Button>
           </div>
-          </div>
+        </div>
 
         <TabsContent value="orders" className="mt-6">
           {/* Orders Table */}
           <Card>
             <CardContent className="p-0">
-            {ordersLoading && <DeliveryLoader label="Fetching orders" />}
-            {ordersError && <div className="p-6 text-sm text-red-600">Failed to load orders.</div>}
-            <Table>
-              <TableHeader>
+              {ordersLoading && <DeliveryLoader label="Fetching orders" />}
+              {ordersError && <div className="p-6 text-sm text-red-600">Failed to load orders.</div>}
+              <Table>
+                <TableHeader>
                   <TableRow className="bg-gray-50">
                     <TableHead className="font-medium">
                       <Checkbox />
@@ -268,50 +171,50 @@ const Orders = () => {
                     <TableHead className="font-medium">Amount</TableHead>
                     <TableHead className="font-medium">Status</TableHead>
                     <TableHead className="font-medium">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(ordersData as any[]).map((order) => (
-                  <TableRow key={order.id}>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(ordersData as any[]).map((order) => (
+                    <TableRow key={order.id}>
                       <TableCell>
                         <Checkbox />
                       </TableCell>
-                    <TableCell className="font-medium">{order.id}</TableCell>
+                      <TableCell className="font-medium">{order.id}</TableCell>
                       <TableCell>{order.dateTime}</TableCell>
-                    <TableCell>{order.customer}</TableCell>
-                    <TableCell>{order.vendor}</TableCell>
+                      <TableCell>{order.customer}</TableCell>
+                      <TableCell>{order.vendor}</TableCell>
                       <TableCell>{order.rider}</TableCell>
-                    <TableCell>{order.amount}</TableCell>
-                    <TableCell>
+                      <TableCell>{order.amount}</TableCell>
+                      <TableCell>
                         <div className="flex items-center gap-2">
                           {getStatusDot(order.statusColor)}
                           <span>{order.status}</span>
                         </div>
-                    </TableCell>
-                    <TableCell>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           className="text-black hover:bg-gray-100"
                           onClick={() => navigate(`/orders/${order.id}`)}
                         >
                           View <ChevronRight className="h-4 w-4 ml-1" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
 
           {/* Pagination */}
           <div className="flex justify-center">
-          <PaginationControls
-            currentPage={currentPage}
-            totalPages={Math.max(1, Math.ceil((ordersResp?.meta?.total || ordersData.length || 1) / (ordersResp?.meta?.page_size || 10)))}
-            onPageChange={setCurrentPage}
-          />
+            <PaginationControls
+              currentPage={currentPage}
+              totalPages={Math.max(1, Math.ceil((ordersResp?.meta?.total || ordersData.length || 1) / (ordersResp?.meta?.page_size || 10)))}
+              onPageChange={setCurrentPage}
+            />
           </div>
         </TabsContent>
 
@@ -319,8 +222,8 @@ const Orders = () => {
           {/* Disputes Table */}
           <Card>
             <CardContent className="p-0">
-            <Table>
-              <TableHeader>
+              <Table>
+                <TableHeader>
                   <TableRow className="bg-gray-50">
                     <TableHead className="font-medium">Dispute ID</TableHead>
                     <TableHead className="font-medium">Order ID</TableHead>
@@ -329,15 +232,15 @@ const Orders = () => {
                     <TableHead className="font-medium">Issue</TableHead>
                     <TableHead className="font-medium">Status</TableHead>
                     <TableHead className="font-medium">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {disputesData.map((dispute, index) => (
                     <TableRow key={index}>
                       <TableCell className="font-medium">{dispute.disputeId}</TableCell>
-                    <TableCell>{dispute.orderId}</TableCell>
-                    <TableCell>{dispute.user}</TableCell>
-                    <TableCell>{dispute.vendor}</TableCell>
+                      <TableCell>{dispute.orderId}</TableCell>
+                      <TableCell>{dispute.user}</TableCell>
+                      <TableCell>{dispute.vendor}</TableCell>
                       <TableCell>{dispute.issue}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -345,30 +248,30 @@ const Orders = () => {
                           <span>{dispute.status}</span>
                         </div>
                       </TableCell>
-                    <TableCell>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           className="text-black hover:bg-gray-100"
                           onClick={() => handleDisputeAction(dispute, dispute.status === "Open" ? "review" : "view")}
-                      >
+                        >
                           {dispute.status === "Open" ? "Review" : "View"} <ChevronRight className="h-4 w-4 ml-1" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
 
           {/* Pagination */}
           <div className="flex justify-center">
-          <PaginationControls
-            currentPage={currentPage}
+            <PaginationControls
+              currentPage={currentPage}
               totalPages={10}
-            onPageChange={setCurrentPage}
-          />
+              onPageChange={setCurrentPage}
+            />
           </div>
         </TabsContent>
       </Tabs>
@@ -392,7 +295,7 @@ const Orders = () => {
               </Button>
             </div>
           </DialogHeader>
-          
+
           <div className="space-y-6">
             {/* Complaint */}
             <div>
@@ -483,7 +386,7 @@ const Orders = () => {
               </Button>
             </div>
           </DialogHeader>
-          
+
           <div className="space-y-6">
             {/* Complaint */}
             <div>

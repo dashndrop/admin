@@ -5,14 +5,15 @@ import { PaginationControls } from "@/components/ui/pagination-controls";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
 import { Star } from "lucide-react";
 import { useState } from "react";
+import { formatCurrency } from "@/lib/utils";
 
 export default function Analytics() {
   const [currentPage, setCurrentPage] = useState(1);
   const [activeTab, setActiveTab] = useState("vendor");
 
   const platformMetrics = [
-    { title: "Total Revenue (MTD)", value: "₦100k", subtitle: "Points" },
-    { title: "Orders Completed (MTD)", value: "12.6K", subtitle: "Points" },
+    { title: "Total Revenue (MTD)", value: formatCurrency(100000), subtitle: "Points" },
+    { title: "Orders Completed (MTD)", value: "12,600", subtitle: "Points" },
     { title: "Active Vendors", value: "1,240", subtitle: "Users" },
     { title: "Active Riders", value: "320", subtitle: "Requests" },
     { title: "Customer Satisfaction", value: "72%", subtitle: "" },
@@ -27,10 +28,10 @@ export default function Analytics() {
 
   const topVendor = {
     name: "ChopLife Kitchen",
-    revenue: "₦100k",
+    revenue: formatCurrency(100000),
     orders: "1,240",
     rating: "4.6",
-    commission: "₦100k",
+    commission: formatCurrency(100000),
   };
 
   const topRider = {
@@ -90,7 +91,7 @@ export default function Analytics() {
             </div>
             <div>
               <CardTitle className="text-base">Platform Performance</CardTitle>
-              <p className="text-xs text-muted-foreground">Lorem ipsum dolor sit amet, consectetur adipiscing elit</p>
+              <p className="text-xs text-muted-foreground">Comprehensive overview of platform goals and key performance indicators</p>
             </div>
           </div>
         </CardHeader>
@@ -136,7 +137,7 @@ export default function Analytics() {
             </div>
             <div>
               <CardTitle className="text-base">Insights</CardTitle>
-              <p className="text-xs text-muted-foreground">Lorem ipsum dolor sit amet, consectetur adipiscing elit</p>
+              <p className="text-xs text-muted-foreground">Detailed breakdown of top performers across different categories</p>
             </div>
           </div>
         </CardHeader>
@@ -225,7 +226,7 @@ export default function Analytics() {
               </div>
               <div>
                 <CardTitle className="text-base">Vendors Performance</CardTitle>
-                <p className="text-xs text-muted-foreground">Lorem ipsum dolor sit amet, consectetur adipiscing elit</p>
+                <p className="text-xs text-muted-foreground">Detailed comparison and metrics for all active vendors</p>
               </div>
             </div>
           </CardHeader>

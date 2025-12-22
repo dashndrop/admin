@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { PaginationControls } from "@/components/ui/pagination-controls";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { formatCurrency } from "@/lib/utils";
 
 type Row = {
   id: string;
@@ -80,8 +81,8 @@ export default function Payments() {
       return Array.from({ length: 12 }).map((_, i) => ({
         id: `PAY-${100 + i}`,
         entity: i % 2 ? "Fresh Mart" : "ChopLife Kitchen",
-        balance: "₦30,000.00",
-        lastPayout: "Aug 18, 2025 — ₦30,000.00",
+        balance: formatCurrency(30000),
+        lastPayout: `${new Date().toLocaleDateString()} — ${formatCurrency(30000)}`,
         method: "Bank Transfer",
         status: (i % 5 === 0 ? "Failed" : i % 3 === 0 ? "Paid" : "Pending") as Row["status"],
       }));
@@ -90,8 +91,8 @@ export default function Payments() {
       return Array.from({ length: 12 }).map((_, i) => ({
         id: `RID-PAY-${100 + i}`,
         entity: `Rider ${i % 2 ? 210 + i : 110 + i}`,
-        balance: "₦30,000.00",
-        lastPayout: "Aug 18, 2025 — ₦30,000.00",
+        balance: formatCurrency(30000),
+        lastPayout: `${new Date().toLocaleDateString()} — ${formatCurrency(30000)}`,
         method: i % 4 === 0 ? "Mobile Wallet" : "Bank Transfer",
         status: (i % 5 === 0 ? "Failed" : i % 3 === 0 ? "Paid" : "Pending") as Row["status"],
       }));
@@ -107,7 +108,7 @@ export default function Payments() {
       orderId: `ORD-${870 + (i % 5)}`,
       user: "John Doe",
       vendor: i % 2 ? "ChopLife" : "FreshMart",
-      amount: "₦30,000.00",
+      amount: formatCurrency(30000),
       status: (i % 3 === 0 ? "Completed" : "Pending") as RefundRow["status"],
     }));
   }, [activeTab]);
@@ -121,7 +122,7 @@ export default function Payments() {
             <div className="w-8 h-8 rounded-md bg-muted flex items-center justify-center">💳</div>
             <div>
               <CardTitle className="text-base">Payment & Finances</CardTitle>
-              <p className="text-xs text-muted-foreground">Lorem ipsum dolor sit amet, consectetur adipiscing elit</p>
+              <p className="text-xs text-muted-foreground">Monitor platform revenue, handle vendor payouts, and manage customer refunds</p>
             </div>
           </div>
         </CardHeader>
@@ -130,7 +131,9 @@ export default function Payments() {
             <Card key={idx}>
               <CardContent className="p-4">
                 <p className="text-xs text-muted-foreground">{s.t}</p>
-                <div className="text-2xl font-bold mt-1">{s.v}</div>
+                <div className="text-2xl font-bold mt-1">
+                  {s.v.startsWith('₦') ? formatCurrency(s.v) : s.v || "0"}
+                </div>
               </CardContent>
             </Card>
           ))}
@@ -188,60 +191,60 @@ export default function Payments() {
           <TableBody>
             {activeTab !== "refund"
               ? rows.map((r, i) => (
-                  <TableRow key={i} className="hover:bg-muted/50">
-                    <TableCell className="font-medium">{r.entity}</TableCell>
-                    <TableCell>{r.balance}</TableCell>
-                    <TableCell>{r.lastPayout}</TableCell>
-                    <TableCell>{r.method}</TableCell>
-                    <TableCell><StatusDot status={r.status} /></TableCell>
-                    <TableCell>
-                      {r.status === "Pending" ? (
-                        <Button
-                          variant="ghost"
-                          className="p-0 h-auto text-black hover:text-black/70"
-                          onClick={() => navigate(`/payments/${r.id}`, { state: { type: activeTab } })}
-                        >
-                          Pay Now <ChevronRight className="h-3 w-3 ml-1" />
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="ghost"
-                          className="p-0 h-auto text-black hover:text-black/70"
-                          onClick={() => navigate(`/payments/${r.id}`, { state: { type: activeTab } })}
-                        >
-                          View <ChevronRight className="h-3 w-3 ml-1" />
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))
-              : refundRows.map((rr, i) => (
-                  <TableRow key={i} className="hover:bg-muted/50">
-                    <TableCell className="font-medium">{rr.refundId}</TableCell>
-                    <TableCell>{rr.orderId}</TableCell>
-                    <TableCell>{rr.user}</TableCell>
-                    <TableCell>{rr.vendor}</TableCell>
-                    <TableCell>{rr.amount}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <span className={`h-2 w-2 rounded-full ${rr.status === "Pending" ? "bg-yellow-500" : "bg-green-500"}`} />
-                        <span>{rr.status}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
+                <TableRow key={i} className="hover:bg-muted/50">
+                  <TableCell className="font-medium">{r.entity}</TableCell>
+                  <TableCell>{r.balance}</TableCell>
+                  <TableCell>{r.lastPayout}</TableCell>
+                  <TableCell>{r.method}</TableCell>
+                  <TableCell><StatusDot status={r.status} /></TableCell>
+                  <TableCell>
+                    {r.status === "Pending" ? (
                       <Button
                         variant="ghost"
                         className="p-0 h-auto text-black hover:text-black/70"
-                        onClick={() => {
-                          setSelectedRefund(rr);
-                          setIsRefundDialogOpen(true);
-                        }}
+                        onClick={() => navigate(`/payments/${r.id}`, { state: { type: activeTab } })}
                       >
-                        {rr.status === "Pending" ? "Review" : "View"} <ChevronRight className="h-3 w-3 ml-1" />
+                        Pay Now <ChevronRight className="h-3 w-3 ml-1" />
                       </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        className="p-0 h-auto text-black hover:text-black/70"
+                        onClick={() => navigate(`/payments/${r.id}`, { state: { type: activeTab } })}
+                      >
+                        View <ChevronRight className="h-3 w-3 ml-1" />
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))
+              : refundRows.map((rr, i) => (
+                <TableRow key={i} className="hover:bg-muted/50">
+                  <TableCell className="font-medium">{rr.refundId}</TableCell>
+                  <TableCell>{rr.orderId}</TableCell>
+                  <TableCell>{rr.user}</TableCell>
+                  <TableCell>{rr.vendor}</TableCell>
+                  <TableCell>{rr.amount}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <span className={`h-2 w-2 rounded-full ${rr.status === "Pending" ? "bg-yellow-500" : "bg-green-500"}`} />
+                      <span>{rr.status}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      variant="ghost"
+                      className="p-0 h-auto text-black hover:text-black/70"
+                      onClick={() => {
+                        setSelectedRefund(rr);
+                        setIsRefundDialogOpen(true);
+                      }}
+                    >
+                      {rr.status === "Pending" ? "Review" : "View"} <ChevronRight className="h-3 w-3 ml-1" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
           </TableBody>
         </Table>
       </Card>
@@ -279,9 +282,9 @@ export default function Payments() {
                 </TableHeader>
                 <TableBody>
                   {[
-                    { item: "Jollof Rice", qty: "2x", price: "₦10,000.00" },
-                    { item: "Chicken", qty: "2x", price: "₦10,000.00" },
-                    { item: "Pack", qty: "2x", price: "₦10,000.00" },
+                    { item: "Jollof Rice", qty: "2x", price: formatCurrency(10000) },
+                    { item: "Chicken", qty: "2x", price: formatCurrency(10000) },
+                    { item: "Pack", qty: "2x", price: formatCurrency(10000) },
                   ].map((r, idx) => (
                     <TableRow key={idx} className="border-t">
                       <TableCell>{r.item}</TableCell>
@@ -292,7 +295,7 @@ export default function Payments() {
                   <TableRow className="border-t">
                     <TableCell className="font-medium">-</TableCell>
                     <TableCell className="font-medium">Total</TableCell>
-                    <TableCell className="font-medium">₦30,000.00</TableCell>
+                    <TableCell className="font-medium">{formatCurrency(30000)}</TableCell>
                   </TableRow>
                 </TableBody>
               </Table>
@@ -301,7 +304,7 @@ export default function Payments() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <p className="text-xs text-muted-foreground">Refund Amount Requested</p>
-                <p className="mt-1">₦30,000.00</p>
+                <p className="mt-1">{formatCurrency(30000)}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Refund Reason (user-provided)</p>

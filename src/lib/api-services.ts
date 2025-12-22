@@ -1,4 +1,5 @@
 import { api } from './api';
+import { formatCurrency } from "./utils";
 
 // Generic API service functions
 export const apiServices = {
@@ -7,7 +8,7 @@ export const apiServices = {
     try {
       const restaurants = await api.getRestaurants() as any[];
       console.log('Fetched restaurants from API:', restaurants);
-      
+
       // Transform API response to match our UI expectations
       return restaurants.map((restaurant: any) => {
         // Backend returns flags, not a direct status string.
@@ -15,8 +16,8 @@ export const apiServices = {
         const status: "Suspended" | "Active" | "Inactive" = restaurant?.is_suspended
           ? "Suspended"
           : restaurant?.is_open
-          ? "Active"
-          : "Inactive";
+            ? "Active"
+            : "Inactive";
 
         return {
           id: restaurant.id,
@@ -24,17 +25,21 @@ export const apiServices = {
           description: restaurant.description,
           email: restaurant.email,
           phone: restaurant.phone_number,
+          phone_number: restaurant.phone_number,
           status,
-          category: "Food & Beverages", // Default since not in API response
+          category: restaurant.category || "Food & Beverages",
           locations: restaurant.locations || [],
           operating_hours: restaurant.operating_hours || [],
           cover_image_url: restaurant.cover_image_url,
+          is_approved: restaurant.is_approved,
+          is_open: restaurant.is_open,
+          is_suspended: restaurant.is_suspended,
           created_at: restaurant.created_at,
           updated_at: restaurant.updated_at,
-          // For display purposes
-          revenue: "₦0", // Not available in API
-          rating: 0, // Not available in API
-          orders: 0 // Not available in API
+          rating: restaurant.average_rating || 0,
+          total_reviews: restaurant.total_reviews || 0,
+          revenue: "₦0",
+          orders: 0
         };
       });
     } catch (error) {
@@ -59,13 +64,22 @@ export const apiServices = {
     try {
       const restaurant = await api.getRestaurant(id) as any;
       console.log('Fetched restaurant details:', restaurant);
-      
+
       // Transform single restaurant response
       const status: "Suspended" | "Active" | "Inactive" = restaurant?.is_suspended
         ? "Suspended"
         : restaurant?.is_open
-        ? "Active"
-        : "Inactive";
+          ? "Active"
+          : "Inactive";
+
+      const formatDocumentUrl = (url?: string) => {
+        if (!url) return undefined;
+        if (url.startsWith('http') || url.startsWith('data:')) return url;
+        // Assume PNG for base64 strings starting with iVBOR
+        if (url.startsWith('iVBOR')) return `data:image/png;base64,${url}`;
+        // Default to generic base64 image if it looks like base64
+        return `data:image/jpeg;base64,${url}`;
+      };
 
       return {
         id: restaurant.id,
@@ -73,11 +87,23 @@ export const apiServices = {
         description: restaurant.description,
         email: restaurant.email,
         phone: restaurant.phone_number,
+        phone_number: restaurant.phone_number,
         status,
-        category: "Food & Beverages",
+        category: restaurant.category || "Food & Beverages",
         locations: restaurant.locations || [],
         operating_hours: restaurant.operating_hours || [],
-        cover_image_url: restaurant.cover_image_url,
+        cover_image_url: formatDocumentUrl(restaurant.cover_image_url),
+        is_approved: restaurant.is_approved,
+        is_open: restaurant.is_open,
+        is_suspended: restaurant.is_suspended,
+        business_registration_number: restaurant.business_registration_number,
+        tax_id: restaurant.tax_id,
+        business_entity_type: restaurant.business_entity_type,
+        business_registration_certificate: formatDocumentUrl(restaurant.business_registration_certificate),
+        restaurant_owner_valid_id: formatDocumentUrl(restaurant.restaurant_owner_valid_id),
+        proof_of_business_operation: formatDocumentUrl(restaurant.proof_of_business_operation),
+        rating: restaurant.average_rating || 0,
+        total_reviews: restaurant.total_reviews || 0,
         created_at: restaurant.created_at,
         updated_at: restaurant.updated_at
       };
@@ -155,21 +181,25 @@ export const apiServices = {
   },
 
   // Users
-  async getUsers() {
-    return [
-      {
-        id: "U-120",
-        name: "Mariam Ajani",
-        email: "mariam@mail.com",
-        phone: "+234 802 123 4567",
-        status: "Active",
-        orders: 25,
-        totalSpent: "₦150,000",
-        registrationDate: "2023-06-15",
-        lastActive: "2024-01-15"
-      },
-      // Add more mock data
-    ];
+  async getUsers(params?: { page?: number; per_page?: number; search?: string; }) {
+    try {
+      const response = await api.getUsers(params);
+      const list = (response.users || []).map((user: any) => ({
+        id: user._id ?? user.id,
+        name: user.full_name ?? user.name ?? '-',
+        email: user.email ?? '-',
+        phone: user.phone_number ?? '-',
+        status: user.is_active ? "Active" : "Inactive",
+        orders: user.total_orders ?? 0,
+        totalSpent: formatCurrency(user.total_spent ?? 0),
+        registrationDate: user.created_at ?? '-',
+        lastActive: user.updated_at ?? user.last_login ?? '-'
+      }));
+      return { list, total: response.total ?? list.length };
+    } catch (error) {
+      console.error('Failed to fetch users:', error);
+      return { list: [], total: 0 };
+    }
   },
 
   async getUser(id: string) {
@@ -200,8 +230,8 @@ export const apiServices = {
     try {
       const response: any = await api.getRiders(params);
       // If backend returns pagination structure, normalize list
-      const list = Array.isArray(response) ? response : response.items || response.results || [];
-      return list.map((rider: any) => ({
+      const rawList = Array.isArray(response) ? response : response.items || response.results || [];
+      const list = rawList.map((rider: any) => ({
         id: rider._id ?? rider.id ?? rider.rider_id,
         name: rider.full_name ?? rider.name ?? '',
         email: rider.email ?? '',
@@ -214,9 +244,16 @@ export const apiServices = {
         joinDate: rider.created_at ?? rider.join_date,
         last_login: rider.updated_at ?? rider.last_login,
       }));
+
+      return {
+        list,
+        total: response?.total ?? (Array.isArray(response) ? response.length : list.length),
+        page: response?.page ?? params?.page ?? 1,
+        page_size: response?.page_size ?? params?.page_size ?? list.length
+      };
     } catch (error) {
       console.error('Failed to fetch riders:', error);
-      return [];
+      return { list: [], total: 0, page: params?.page ?? 1, page_size: params?.page_size ?? 10 };
     }
   },
 
@@ -259,9 +296,9 @@ export const apiServices = {
         const status: string = order.status ?? 'unknown';
         const statusColor = (
           status === 'delivered' || status === 'completed' ? 'green' :
-          status === 'in_transit' || status === 'pending' || status === 'pending_payment' ? 'yellow' :
-          status === 'cancelled' ? 'red' :
-          status === 'refunded' ? 'orange' : 'gray'
+            status === 'in_transit' || status === 'pending' || status === 'pending_payment' ? 'yellow' :
+              status === 'cancelled' ? 'red' :
+                status === 'refunded' ? 'orange' : 'gray'
         );
         return {
           id: order._id ?? order.id ?? order.order_id,
@@ -269,16 +306,16 @@ export const apiServices = {
           customer: order.user_id ?? order.customer_name ?? '-',
           vendor: order.restaurant_id ?? order.vendor_name ?? '-',
           rider: order.rider_id ?? order.rider_name ?? '-',
-          amount: order.total_price ?? order.amount ?? order.amount_formatted ?? '-',
+          amount: formatCurrency(order.total_price ?? order.amount ?? order.total_amount),
           status,
           statusColor
         };
       });
 
       const meta = {
-        total: response?.total ?? list.length,
+        total: response?.total ?? (Array.isArray(response) ? response.length : list.length),
         page: response?.page ?? params?.page ?? 1,
-        page_size: response?.limit ?? params?.page_size ?? list.length
+        page_size: response?.limit ?? response?.page_size ?? params?.page_size ?? list.length
       };
 
       return { list, meta };
@@ -338,30 +375,50 @@ export const apiServices = {
   },
 
   async getPayment(id: string) {
+    // Current backend doesn't have a dedicated payment details endpoint
+    // Returning formatted mock data for now
     return {
       id,
-      type: "vendor", // or "rider"
+      type: "vendor",
       vendor: {
         name: "Chicken Republic - Omole",
         vendorId: "V-101",
         category: "Food & Beverages",
-        businessAddress: "123 Allen Avenue, Ikeja, Lagos",
-        contactPerson: "John Doe",
-        email: "john@chickenrepublic.com",
-        phone: "+234 802 123 4567",
+        businessAddress: "Omole phase 1, Ojodu Berger",
+        contactPerson: "Adebayo Yusuf",
+        email: "adebayousf@gmail.com",
+        phone: "+234 908 005 0000",
         documents: ["Certificate & Licenses"]
       },
-      walletBalance: "₦125,000.00",
+      walletBalance: formatCurrency(125000),
+      threshold: formatCurrency(150000),
       payIns: [
         {
-          date: "2024-01-15",
-          transactionId: "TRX-123456",
+          date: "Aug 18, 2025",
+          transactionId: "PTF-20021",
           customer: "Mariam Ajani",
-          paymentMethod: "Card",
-          amount: "₦15,000.00",
+          paymentMethod: "Bank Transfer",
+          amount: formatCurrency(30000),
           status: "Successful"
         }
       ]
+    };
+  },
+  async getDisputes(params?: { page?: number; page_size?: number }) {
+    // Current backend doesn't have a dedicated disputes endpoint
+    return {
+      list: [
+        {
+          disputeId: "DISP-101",
+          orderId: "ORD-884",
+          user: "Mariam Ajani",
+          vendor: "Chicken Republic",
+          issue: "Missing Item",
+          status: "Open",
+          statusColor: "yellow"
+        }
+      ],
+      total: 1
     };
   }
 };

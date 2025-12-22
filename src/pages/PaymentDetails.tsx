@@ -76,7 +76,7 @@ export default function PaymentDetails() {
             </div>
             <div>
               <CardTitle className="text-base">{isRider ? "Profile Information" : "Vendor Information"}</CardTitle>
-              <p className="text-xs text-muted-foreground">Lorem ipsum dolor sit amet, consectetur adipiscing elit</p>
+              <p className="text-xs text-muted-foreground">Detailed business metadata and contact information</p>
             </div>
           </div>
         </CardHeader>
@@ -211,7 +211,7 @@ export default function PaymentDetails() {
               </div>
               <div>
                 <CardTitle className="text-base">Wallet Balance</CardTitle>
-                <p className="text-xs text-muted-foreground">Lorem ipsum dolor sit amet, consectetur adipiscing elit</p>
+                <p className="text-xs text-muted-foreground">Overview of current earnings and available payout actions</p>
               </div>
             </div>
             {isRider && (
@@ -265,7 +265,7 @@ export default function PaymentDetails() {
               </div>
               <div>
                 <CardTitle className="text-base">{isRider ? "Rider Pay-Ins" : "Vendor Pay-Ins"}</CardTitle>
-                <p className="text-xs text-muted-foreground">Lorem ipsum dolor sit amet, consectetur adipiscing elit</p>
+                <p className="text-xs text-muted-foreground">History of all incoming payments for this entity</p>
               </div>
             </div>
             <div className="flex items-center gap-2">

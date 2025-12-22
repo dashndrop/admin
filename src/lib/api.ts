@@ -13,15 +13,15 @@ export class ApiClient {
     this.token = localStorage.getItem('admin_token');
   }
 
-  private async request<T>(
+  public async request<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
-    
+
     // Don't include token for login and token refresh endpoints
     const isAuthEndpoint = ['/admin/login', '/users/refresh-token'].some(path => endpoint.startsWith(path));
-    
+
     const config: RequestInit = {
       method: options.method || 'GET',
       headers: {
@@ -38,7 +38,7 @@ export class ApiClient {
 
     try {
       const response = await fetch(url, config);
-      
+
       // Handle 401 Unauthorized - token is invalid or expired
       if (response.status === 401) {
         this.logout();
@@ -48,12 +48,12 @@ export class ApiClient {
         }
         throw new Error('Your session has expired. Please log in again.');
       }
-      
+
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
         let errorMessage = 'An error occurred';
         const detail = (data as any)?.detail;
-        
+
         if (Array.isArray(detail)) {
           errorMessage = detail.map((d: any) => d?.msg || d?.message || JSON.stringify(d)).join("; ");
         } else if (typeof detail === 'object' && detail !== null) {
@@ -65,7 +65,7 @@ export class ApiClient {
         }
         throw new Error(errorMessage);
       }
-      
+
       const data = await response.json().catch(() => ({}));
       return data as T;
     } catch (error) {
@@ -107,12 +107,12 @@ export class ApiClient {
       }
 
       const data = await response.json();
-      
+
       // Store tokens
       this.token = data.access_token;
       localStorage.setItem('admin_token', data.access_token);
       localStorage.setItem('admin_id', data.admin_id);
-      
+
       console.log('Login successful for user:', username);
       return data;
     } catch (error) {
@@ -138,23 +138,37 @@ export class ApiClient {
     this.token = response.token;
     localStorage.setItem('admin_token', response.token);
     localStorage.setItem('admin_refresh_token', response.refresh_token);
-    
+
     return response;
   }
 
   // Admin Profile Management
-  async getAdminProfile() {
-    // For now, return a mock profile since the endpoint might not exist
-    const adminId = localStorage.getItem('admin_id');
-    return {
-      id: adminId || 'unknown',
-      name: 'Admin User',
-      email: 'admin@dashndrop.com',
-      phone_number: '+234 802 123 4567',
-      role: 'admin',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
+  async getAdminProfile(): Promise<AdminProfile> {
+    try {
+      const profile = await this.request<any>('/users/profile');
+      return {
+        id: profile._id || profile.id,
+        name: profile.full_name || profile.name || 'Admin User',
+        email: profile.email || 'admin@dashndrop.com',
+        phone_number: profile.phone_number || '',
+        role: profile.role || 'admin',
+        profile_picture: profile.profile_picture,
+        created_at: profile.created_at || new Date().toISOString(),
+        updated_at: profile.updated_at || new Date().toISOString()
+      };
+    } catch (error) {
+      console.warn('Failed to fetch real admin profile, using mock:', error);
+      const adminId = localStorage.getItem('admin_id');
+      return {
+        id: adminId || 'unknown',
+        name: 'Admin User',
+        email: 'admin@dashndrop.com',
+        phone_number: '+234 802 123 4567',
+        role: 'admin',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+    }
   }
 
   async updateAdminProfile(data: any) {
@@ -216,13 +230,13 @@ export class ApiClient {
   }) {
     const query = params
       ? `?${new URLSearchParams(
-          Object.entries(params)
-            .filter(([, v]) => v !== undefined && v !== null && v !== '')
-            .reduce((acc, [k, v]) => {
-              acc[k] = String(v);
-              return acc;
-            }, {} as Record<string, string>)
-        ).toString()}`
+        Object.entries(params)
+          .filter(([, v]) => v !== undefined && v !== null && v !== '')
+          .reduce((acc, [k, v]) => {
+            acc[k] = String(v);
+            return acc;
+          }, {} as Record<string, string>)
+      ).toString()}`
       : '';
     return this.request(`/admin/riders${query}`);
   }
@@ -237,13 +251,13 @@ export class ApiClient {
   }) {
     const query = params
       ? `?${new URLSearchParams(
-          Object.entries(params)
-            .filter(([, v]) => v !== undefined && v !== null && v !== '')
-            .reduce((acc, [k, v]) => {
-              acc[k] = String(v);
-              return acc;
-            }, {} as Record<string, string>)
-        ).toString()}`
+        Object.entries(params)
+          .filter(([, v]) => v !== undefined && v !== null && v !== '')
+          .reduce((acc, [k, v]) => {
+            acc[k] = String(v);
+            return acc;
+          }, {} as Record<string, string>)
+      ).toString()}`
       : '';
     return this.request(`/admin/orders${query}`);
   }
@@ -266,18 +280,20 @@ export class ApiClient {
     page?: number;
     page_size?: number;
     unread_only?: boolean;
+    read?: boolean;
     type?: string;
+    [key: string]: any;
   }) {
     const query = params
       ? `?${new URLSearchParams(
-          Object.entries(params)
-            .filter(([_, v]) => v !== undefined && v !== null && v !== '')
-            .map(([k, v]) => [k, String(v)])
-            .reduce((acc, [k, v]) => ({
-              ...acc,
-              [k]: v
-            }), {} as Record<string, string>)
-        ).toString()}`
+        Object.entries(params)
+          .filter(([_, v]) => v !== undefined && v !== null && v !== '')
+          .map(([k, v]) => [k, String(v)])
+          .reduce((acc, [k, v]) => ({
+            ...acc,
+            [k]: v
+          }), {} as Record<string, string>)
+      ).toString()}`
       : '';
     return this.request<{
       items: Notification[];
@@ -303,7 +319,7 @@ export class ApiClient {
   // Waitlist Management
   async getWaitlist(params?: WaitlistFilterParams): Promise<WaitlistResponse> {
     const query = new URLSearchParams();
-    
+
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
         if (value !== undefined) {
@@ -311,7 +327,7 @@ export class ApiClient {
         }
       });
     }
-    
+
     return this.request<WaitlistResponse>(`/admin/waitlist?${query.toString()}`);
   }
 
@@ -343,7 +359,7 @@ export class ApiClient {
   async getUsers(params?: UserFilterParams) {
     try {
       const queryParams = new URLSearchParams();
-      
+
       // Add only defined parameters to the query
       if (params) {
         Object.entries(params).forEach(([key, value]) => {
@@ -352,10 +368,10 @@ export class ApiClient {
           }
         });
       }
-      
+
       const url = `/admin/users${queryParams.toString() ? `?${queryParams}` : ''}`;
       console.log('Fetching users from:', url);
-      
+
       const response = await fetch(`${this.baseURL}${url}`, {
         method: 'GET',
         headers: {
@@ -371,7 +387,7 @@ export class ApiClient {
 
       const data = await response.json();
       console.log('Users API response:', data);
-      
+
       // Transform the response to match the expected structure
       return {
         users: Array.isArray(data) ? data : [],
@@ -522,6 +538,7 @@ export interface AdminProfile {
   email: string;
   phone_number: string;
   role: string;
+  profile_picture?: string;
   created_at: string;
   updated_at: string;
 }

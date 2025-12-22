@@ -26,32 +26,17 @@ export function RiderTable() {
   const [currentPage, setCurrentPage] = useState(1);
   const navigate = useNavigate();
 
-  const { data: apiRiders = [], isLoading, isError } = useQuery({
+  const { data: ridersData, isLoading, isError } = useQuery({
     queryKey: ["riders", currentPage, searchTerm],
     queryFn: () => apiServices.getRiders({ page: currentPage, page_size: 10, search: searchTerm }),
     staleTime: 30_000
   });
 
-  const riders: Rider[] = (apiRiders as any[]).map((r: any) => ({
-    id: r.id,
-    name: r.name ?? "",
-    email: r.email ?? "",
-    phone: r.phone ?? "",
-    status: (r.status === "Suspended" ? "Suspended" : "Active") as Rider["status"],
-    vehicleType: r.vehicleType ?? "-",
-  }));
-
-  const query = (searchTerm || "").toLowerCase();
-  const filtered = riders.filter(r =>
-    (r.name || "").toLowerCase().includes(query) ||
-    (r.id || "").toLowerCase().includes(query) ||
-    (r.email || "").toLowerCase().includes(query) ||
-    (r.phone || "").toLowerCase().includes(query)
-  );
-
+  const riders = ridersData?.list ?? [];
+  const totalItems = ridersData?.total ?? 0;
   const pageSize = 10;
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const pageItems = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const pageItems = riders; // Already paginated by API
 
   const statusDot = (status: Rider["status"]) => {
     const color = status === "Active" ? "bg-green-500" : "bg-red-500";
@@ -75,7 +60,7 @@ export function RiderTable() {
         <div className="flex items-center gap-2">
           <DropdownMenu open={filterOpen} onOpenChange={setFilterOpen}>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="flex items-center gap-2" style={{border: "none"}}>
+              <Button variant="outline" className="flex items-center gap-2" style={{ border: "none" }}>
                 <Filter className="h-4 w-4" />
                 Filter
               </Button>

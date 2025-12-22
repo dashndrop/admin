@@ -60,6 +60,7 @@ type Vendor = {
   created_at?: string;
   updated_at?: string;
   rating?: number;
+  total_reviews?: number;
   orders?: number;
   revenue?: string;
 };
@@ -113,7 +114,7 @@ export default function VendorDetails() {
 
   const approveRestaurant = async () => {
     if (!vendor) return;
-    
+
     const result = await Swal.fire({
       title: 'Approve Restaurant',
       text: `Are you sure you want to approve ${vendor.name}?`,
@@ -130,15 +131,15 @@ export default function VendorDetails() {
     });
 
     if (!result.isConfirmed) return;
-    
+
     setActionLoading(true);
     showLoading();
-    
+
     try {
       await apiServices.approveRestaurant(vendor.id);
       const refreshed = await apiServices.getVendor(vendor.id);
       setVendor(refreshed as Vendor);
-      
+
       await Swal.fire({
         title: 'Approved!',
         text: 'Restaurant has been approved successfully.',
@@ -164,7 +165,7 @@ export default function VendorDetails() {
   // Reject functionality has been removed as per requirements
   // const rejectRestaurant = async () => {
   //   if (!vendor) return;
-    
+
   //   const { value: reviewNotes, isDismissed } = await MySwal.fire({
   //     title: 'Reject Restaurant',
   //     text: 'Please provide a reason for rejection:',
@@ -190,15 +191,15 @@ export default function VendorDetails() {
   //   });
 
   //   if (isDismissed || !reviewNotes) return;
-    
+
   //   setActionLoading(true);
   //   showLoading();
-    
+
   //   try {
   //     await apiServices.rejectRestaurant(vendor.id, reviewNotes);
   //     const refreshed = await apiServices.getVendor(vendor.id);
   //     setVendor(refreshed as Vendor);
-      
+
   //     await MySwal.fire({
   //       title: 'Rejected!',
   //       text: 'Restaurant has been rejected.',
@@ -223,11 +224,11 @@ export default function VendorDetails() {
 
   const suspendRestaurant = async () => {
     if (!vendor) return;
-    
+
     const isSuspending = vendor.status !== 'Suspended';
     const action = isSuspending ? 'suspend' : 'unsuspend';
     const actionTitle = isSuspending ? 'Suspend' : 'Unsuspend';
-    
+
     const result = await Swal.fire({
       title: `${actionTitle} Restaurant`,
       text: `Are you sure you want to ${action} ${vendor.name}?`,
@@ -244,15 +245,15 @@ export default function VendorDetails() {
     });
 
     if (!result.isConfirmed) return;
-    
+
     setActionLoading(true);
     showLoading();
-    
+
     try {
       await apiServices.suspendRestaurant(vendor.id);
       const refreshed = await apiServices.getVendor(vendor.id);
       setVendor(refreshed as Vendor);
-      
+
       await Swal.fire({
         title: `${actionTitle}ed!`,
         text: `Restaurant has been ${action}ed successfully.`,
@@ -278,7 +279,7 @@ export default function VendorDetails() {
   // Delete functionality has been removed as per requirements
   // const deleteRestaurant = async () => {
   //   if (!vendor) return;
-    
+
   //   const result = await MySwal.fire({
   //     title: 'Delete Restaurant',
   //     text: `Are you sure you want to delete ${vendor.name}? This action cannot be undone!`,
@@ -295,13 +296,13 @@ export default function VendorDetails() {
   //   });
 
   //   if (!result.isConfirmed) return;
-    
+
   //   setActionLoading(true);
   //   showLoading();
-    
+
   //   try {
   //     await apiServices.deleteRestaurant(vendor.id);
-      
+
   //     await MySwal.fire({
   //       title: 'Deleted!',
   //       text: 'Restaurant has been deleted.',
@@ -358,8 +359,16 @@ export default function VendorDetails() {
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-orange-500 rounded-lg flex items-center justify-center">
-                <Building2 className="h-8 w-8 text-white" />
+              <div className="w-16 h-16 bg-orange-500 rounded-lg flex items-center justify-center overflow-hidden border">
+                {vendor.cover_image_url ? (
+                  <img
+                    src={vendor.cover_image_url}
+                    alt={vendor.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <Building2 className="h-8 w-8 text-white" />
+                )}
               </div>
               <div className="flex items-center gap-3">
                 <Badge className={`px-3 py-1 ${getStatusBadgeClass(vendor.status)}`}>{vendor.status}</Badge>
@@ -368,9 +377,9 @@ export default function VendorDetails() {
             </div>
             <div className="flex gap-2">
               {vendor.status !== 'Active' && (
-                <Button 
-                  onClick={approveRestaurant} 
-                  disabled={actionLoading} 
+                <Button
+                  onClick={approveRestaurant}
+                  disabled={actionLoading}
                   className="bg-green-600 hover:bg-green-700 text-white"
                 >
                   Approve
@@ -384,9 +393,9 @@ export default function VendorDetails() {
               >
                 Reject
               </Button> */}
-              <Button 
-                onClick={suspendRestaurant} 
-                disabled={actionLoading} 
+              <Button
+                onClick={suspendRestaurant}
+                disabled={actionLoading}
                 variant="outline"
                 className="border-red-500 text-red-600 hover:bg-red-50"
               >
@@ -459,8 +468,15 @@ export default function VendorDetails() {
                   {vendor.is_suspended ? 'Suspended' : 'Active'}
                 </Badge>
               </div>
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Rating & Reviews</p>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold">{vendor.rating?.toFixed(1) || '0.0'}</span>
+                  <span className="text-sm text-muted-foreground">({vendor.total_reviews || 0} reviews)</span>
+                </div>
+              </div>
             </div>
-            
+
             {vendor.description && (
               <div className="space-y-2 pt-2">
                 <p className="text-sm font-medium text-muted-foreground">Description</p>
@@ -512,9 +528,9 @@ export default function VendorDetails() {
               <div className="space-y-2">
                 <p className="text-sm font-medium text-muted-foreground">Business Registration Certificate</p>
                 {vendor.business_registration_certificate ? (
-                  <a 
-                    href={vendor.business_registration_certificate} 
-                    target="_blank" 
+                  <a
+                    href={vendor.business_registration_certificate}
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="text-sm text-blue-600 hover:underline flex items-center gap-1"
                   >
@@ -532,9 +548,9 @@ export default function VendorDetails() {
               <div className="space-y-2">
                 <p className="text-sm font-medium text-muted-foreground">Owner's Valid ID</p>
                 {vendor.restaurant_owner_valid_id ? (
-                  <a 
-                    href={vendor.restaurant_owner_valid_id} 
-                    target="_blank" 
+                  <a
+                    href={vendor.restaurant_owner_valid_id}
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="text-sm text-blue-600 hover:underline flex items-center gap-1"
                   >
@@ -552,9 +568,9 @@ export default function VendorDetails() {
               <div className="space-y-2">
                 <p className="text-sm font-medium text-muted-foreground">Proof of Business Operation</p>
                 {vendor.proof_of_business_operation ? (
-                  <a 
-                    href={vendor.proof_of_business_operation} 
-                    target="_blank" 
+                  <a
+                    href={vendor.proof_of_business_operation}
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="text-sm text-blue-600 hover:underline flex items-center gap-1"
                   >
@@ -613,8 +629,8 @@ export default function VendorDetails() {
                   <div key={index} className="flex justify-between items-center py-2 border-b last:border-b-0">
                     <span className="font-medium">{hours.day}:</span>
                     <span className="text-sm text-muted-foreground">
-                      {hours.is_closed 
-                        ? 'Closed' 
+                      {hours.is_closed
+                        ? 'Closed'
                         : `${hours.opening_time} - ${hours.closing_time}`}
                     </span>
                   </div>

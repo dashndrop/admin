@@ -44,13 +44,12 @@ export default function AdminView() {
               {admin.name.split(' ').map(n => n[0]).join('')}
             </div>
             <div>
-              <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded ${
-                admin.status === "Active" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-              }`}>
+              <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded ${admin.status === "Active" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                }`}>
                 {admin.status}
               </span>
               <div className="flex items-center gap-2">
-              <h1 className="text-xl font-semibold">{admin.name} | </h1> <span> {admin.role}</span>
+                <h1 className="text-xl font-semibold">{admin.name} | </h1> <span> {admin.role}</span>
               </div>
             </div>
           </div>
@@ -68,7 +67,7 @@ export default function AdminView() {
             <img src={profileIcon} alt="Profile" className="w-10 h-10" />
             Profile Information
           </CardTitle>
-          <p className="text-sm text-muted-foreground">Lorem ipsum dolor sit amet, consectetur adipiscing elit</p>
+          <p className="text-sm text-muted-foreground">Comprehensive profile details and account metadata for this administrator</p>
         </CardHeader>
         <CardContent>
           <div className="space-y-6 relative">
@@ -154,7 +153,7 @@ export default function AdminView() {
             <img src={securityIcon} alt="Security Settings" className="w-10 h-10" />
             <div>
               <CardTitle className="text-lg">Security Settings</CardTitle>
-              <p className="text-sm text-muted-foreground">Lorem ipsum dolor sit amet, consectetur adipiscing elit</p>
+              <p className="text-sm text-muted-foreground">Manage password policies, two-factor authentication, and login alerts</p>
             </div>
           </div>
         </CardHeader>
@@ -170,7 +169,7 @@ export default function AdminView() {
                 <Button className="text-white hover:brightness-110" style={{ backgroundColor: "#003366" }}>Force Password Reset</Button>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
                 <p className="text-sm text-muted-foreground">2FA Status</p>
@@ -196,7 +195,7 @@ export default function AdminView() {
               <img src={activityIcon} alt="Activity Logs" className="w-10 h-10" />
               <div>
                 <CardTitle className="text-lg">Activity Logs</CardTitle>
-                <p className="text-sm text-muted-foreground">Lorem ipsum dolor sit amet, consectetur adipiscing elit</p>
+                <p className="text-sm text-muted-foreground">Traceable history of all administrative actions performed by this account</p>
               </div>
             </div>
             <div className="flex items-center gap-3">

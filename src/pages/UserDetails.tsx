@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowLeft, Filter, ExternalLink, Star, Mail } from "lucide-react";
 import profileIcon from "/img/profile.png";
+import { formatCurrency } from "@/lib/utils";
 
 interface UserDetails {
   id: string;
@@ -105,8 +106,8 @@ export default function UserDetails() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             size="icon"
             onClick={() => navigate("/users")}
             className="h-8 w-8"
@@ -146,7 +147,7 @@ export default function UserDetails() {
             Profile Information
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit
+            Basic user profile details, contact information, and account status
           </p>
         </CardHeader>
         <CardContent>
@@ -202,7 +203,7 @@ export default function UserDetails() {
                 Order History
               </CardTitle>
               <p className="text-sm text-muted-foreground mt-1">
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit
+                Complete log of all past orders placed by this user
               </p>
             </div>
             <div className="flex gap-2">
@@ -241,7 +242,7 @@ export default function UserDetails() {
                       {order.status}
                     </Badge>
                   </TableCell>
-                  <TableCell>{order.amount}</TableCell>
+                  <TableCell>{formatCurrency(order.amount)}</TableCell>
                   <TableCell>{order.rider}</TableCell>
                   <TableCell>
                     <Button
@@ -270,7 +271,7 @@ export default function UserDetails() {
                 Loyalty Balance & Adjustments
               </CardTitle>
               <p className="text-sm text-muted-foreground mt-1">
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit
+                Track and manage customer loyalty points and point adjustments
               </p>
             </div>
             <Button className="bg-blue-600 hover:bg-blue-700 text-white">
@@ -286,7 +287,7 @@ export default function UserDetails() {
               <Star className="h-6 w-6 text-yellow-500 fill-current" />
             </div>
           </div>
-          
+
           <div className="mt-6">
             <Table>
               <TableHeader>

@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { apiServices } from "@/lib/api-services";
+import { formatCurrency } from "@/lib/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DeliveryLoader } from "@/components/ui/delivery-loader";
 
@@ -26,10 +27,11 @@ export default function OrderDetails() {
     enabled: !!id
   });
 
-  const { data: riders = [], isLoading: ridersLoading } = useQuery({
+  const { data: ridersData, isLoading: ridersLoading } = useQuery({
     queryKey: ["riders-for-assign"],
     queryFn: () => apiServices.getRiders({ page: 1, page_size: 50, available: true })
   });
+  const riders = ridersData?.list ?? [];
 
   const assignMutation = useMutation({
     mutationFn: () => apiServices.assignOrderToRider(id as string, selectedRider),
@@ -53,42 +55,42 @@ export default function OrderDetails() {
 
   const orderData = {
     id: (orderFromApi as any)?.id ?? (orderFromApi as any)?._id ?? "DDRD-101",
-    status: (orderFromApi as any)?.status ?? "In Transit",
-    pickupTime: "09:30",
-    estimatedDropOff: "09:50",
-    timeRemaining: "00:10",
-    overtime: "00:00",
+    status: (orderFromApi as any)?.status ?? "Pending",
+    pickupTime: (orderFromApi as any)?.pickup_time ?? "09:30",
+    estimatedDropOff: (orderFromApi as any)?.estimated_dropoff ?? "09:50",
+    timeRemaining: (orderFromApi as any)?.time_remaining ?? "00:10",
+    overtime: (orderFromApi as any)?.overtime ?? "00:00",
     customer: {
-      name: "Mariam Ajani",
-      userId: "102938",
-      email: "Mariam@gmail.com",
-      phone: "+234 802 123 4567",
-      location: "9. Osayemi Street, Aguda Oke-Ira ogba"
+      name: (orderFromApi as any)?.user?.full_name ?? (orderFromApi as any)?.customer_name ?? "Customer",
+      userId: (orderFromApi as any)?.user?.id ?? (orderFromApi as any)?.user_id ?? "-",
+      email: (orderFromApi as any)?.user?.email ?? "-",
+      phone: (orderFromApi as any)?.user?.phone_number ?? (orderFromApi as any)?.customer_phone ?? "-",
+      location: (orderFromApi as any)?.delivery_address?.address ?? "-"
     },
     vendor: {
-      name: "Chicken Republic",
-      vendorId: "DNDV1000",
-      category: "Restaurant",
-      phone: "+234 802 123 4567",
-      location: "Omole phase 1, Ojodu Berger"
+      name: (orderFromApi as any)?.restaurant?.name ?? (orderFromApi as any)?.vendor_name ?? "Vendor",
+      vendorId: (orderFromApi as any)?.restaurant?.id ?? (orderFromApi as any)?.restaurant_id ?? "-",
+      category: (orderFromApi as any)?.restaurant?.category ?? "Restaurant",
+      phone: (orderFromApi as any)?.restaurant?.phone_number ?? "-",
+      location: (orderFromApi as any)?.restaurant?.address ?? "-"
     },
     rider: {
-      name: "Qudus Ajase",
-      riderId: "DDRD-101",
-      email: "Qudusajase@gmail.com",
-      phone: "+234 802 123 4567"
+      name: (orderFromApi as any)?.rider?.full_name ?? (orderFromApi as any)?.rider_name ?? "N/A",
+      riderId: (orderFromApi as any)?.rider?.id ?? (orderFromApi as any)?.rider_id ?? "-",
+      email: (orderFromApi as any)?.rider?.email ?? "-",
+      phone: (orderFromApi as any)?.rider?.phone_number ?? "-"
     },
-    items: [
-      { sn: 1, item: "Jollof rice combo", quantity: 2, unitPrice: "₦300.00", amount: "₦600.00" },
-      { sn: 2, item: "Fried rice combo", quantity: 2, unitPrice: "₦300.00", amount: "₦10,000.00" },
-      { sn: 3, item: "Chicken", quantity: 2, unitPrice: "₦1000.00", amount: "₦12,000.00" },
-      { sn: 4, item: "Malt", quantity: 2, unitPrice: "₦300.00", amount: "₦12,000.00" },
-      { sn: 5, item: "Pack", quantity: 2, unitPrice: "₦300.00", amount: "₦12,000.00" }
-    ],
+    items: ((orderFromApi as any)?.items || []).map((item: any, idx: number) => ({
+      sn: idx + 1,
+      item: item.name || item.product_name || "Item",
+      quantity: item.quantity || 1,
+      unitPrice: formatCurrency(item.unit_price || item.price || 0),
+      amount: formatCurrency((item.quantity || 1) * (item.unit_price || item.price || 0))
+    })),
     payment: {
-      amount: "₦30,000.00",
-      method: "Bank transfer",
-      transactionId: "1120gh76ytuio231hj72gh"
+      amount: formatCurrency((orderFromApi as any)?.total_price ?? (orderFromApi as any)?.amount ?? 0),
+      method: (orderFromApi as any)?.payment_method ?? "N/A",
+      transactionId: (orderFromApi as any)?.payment_reference ?? (orderFromApi as any)?.transaction_id ?? "-"
     }
   };
 
@@ -107,7 +109,7 @@ export default function OrderDetails() {
           </Button>
           <div>
             <h1 className="text-2xl font-bold">Active Order</h1>
-            <p className="text-muted-foreground">Lorem ipsum dolor sit amet, consectetur adipiscing elit</p>
+            <p className="text-muted-foreground">View detailed information and track the progress of this order</p>
           </div>
         </div>
       </div>
@@ -135,7 +137,7 @@ export default function OrderDetails() {
                 </span>
               </div>
             </div>
-            
+
             {/* Order Metrics */}
             <div className="p-6 border-t">
               <div className="flex items-center justify-between">
@@ -230,7 +232,7 @@ export default function OrderDetails() {
             <span className="hidden md:block absolute top-0 bottom-0 w-px bg-gray-200" style={{ left: "40%" }} />
             <span className="hidden md:block absolute top-0 bottom-0 w-px bg-gray-200" style={{ left: "60%" }} />
             <span className="hidden md:block absolute top-0 bottom-0 w-px bg-gray-200" style={{ left: "80%" }} />
-            
+
             {/* Row 1 */}
             <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
               <div>
@@ -291,7 +293,7 @@ export default function OrderDetails() {
             <span className="hidden md:block absolute top-0 bottom-0 w-px bg-gray-200" style={{ left: "40%" }} />
             <span className="hidden md:block absolute top-0 bottom-0 w-px bg-gray-200" style={{ left: "60%" }} />
             <span className="hidden md:block absolute top-0 bottom-0 w-px bg-gray-200" style={{ left: "80%" }} />
-            
+
             {/* Row 1 */}
             <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
               <div>
@@ -348,7 +350,7 @@ export default function OrderDetails() {
             <span className="hidden md:block absolute top-0 bottom-0 w-px bg-gray-200" style={{ left: "40%" }} />
             <span className="hidden md:block absolute top-0 bottom-0 w-px bg-gray-200" style={{ left: "60%" }} />
             <span className="hidden md:block absolute top-0 bottom-0 w-px bg-gray-200" style={{ left: "80%" }} />
-            
+
             {/* Row 1 */}
             <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
               <div>
@@ -430,11 +432,11 @@ export default function OrderDetails() {
               ))}
               <TableRow className="font-semibold">
                 <TableCell colSpan={4}>VAT</TableCell>
-                <TableCell>₦12.0</TableCell>
+                <TableCell>{formatCurrency(0)}</TableCell>
               </TableRow>
-              <TableRow className="font-semibold">
+              <TableRow className="font-semibold text-lg">
                 <TableCell colSpan={4}>Total</TableCell>
-                <TableCell>₦12.0</TableCell>
+                <TableCell>{orderData.payment.amount}</TableCell>
               </TableRow>
             </TableBody>
           </Table>
@@ -461,7 +463,7 @@ export default function OrderDetails() {
             <span className="hidden md:block absolute top-0 bottom-0 w-px bg-gray-200" style={{ left: "40%" }} />
             <span className="hidden md:block absolute top-0 bottom-0 w-px bg-gray-200" style={{ left: "60%" }} />
             <span className="hidden md:block absolute top-0 bottom-0 w-px bg-gray-200" style={{ left: "80%" }} />
-            
+
             {/* Row 1 */}
             <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
               <div>

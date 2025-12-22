@@ -12,6 +12,7 @@ import { PaginationControls } from "@/components/ui/pagination-controls";
 import { api } from "@/lib/api";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "@/components/ui/use-toast";
+import { useNotifications } from "@/contexts/NotificationContext";
 
 type NotificationStatus = 'all' | 'unread';
 type NotificationType = 'all' | 'refund' | 'system' | 'application' | 'payouts' | 'security';
@@ -36,6 +37,7 @@ interface NotificationData {
 }
 
 export default function Notifications() {
+  const { refreshNotifications } = useNotifications();
   const [currentPage, setCurrentPage] = useState(1);
   const [isRefundModalOpen, setIsRefundModalOpen] = useState(false);
   const [selectedRefund, setSelectedRefund] = useState<any>(null);
@@ -67,11 +69,11 @@ export default function Notifications() {
       console.log('Fetching notifications with params:', params);
       const response = await api.getNotifications(params);
       console.log('API Response:', response);
-      
-      // Handle the API response which contains notifications in a 'notifications' array
-      const items: NotificationData[] = response?.notifications || [];
+
+      // Handle the API response which contains notifications in an 'items' array
+      const items: NotificationData[] = (response as any)?.items || (response as any)?.notifications || [];
       const total = response?.total || 0;
-      
+
       console.log('Processed items:', items);
       setNotifications(items);
       // Calculate total pages based on total count and page size
@@ -95,13 +97,14 @@ export default function Notifications() {
     try {
       await api.markNotificationAsRead(notificationId);
       // Update local state
-      setNotifications(notifications.map(notif => 
-        notif._id === notificationId ? { 
-          ...notif, 
+      setNotifications(notifications.map(notif =>
+        notif._id === notificationId ? {
+          ...notif,
           read: true,
           read_at: new Date().toISOString()
         } : notif
       ));
+      refreshNotifications();
     } catch (error) {
       console.error('Failed to mark notification as read:', error);
     }
@@ -113,11 +116,12 @@ export default function Notifications() {
       await api.markAllNotificationsAsRead();
       // Update local state
       const now = new Date().toISOString();
-      setNotifications(notifications.map(notif => ({ 
-        ...notif, 
+      setNotifications(notifications.map(notif => ({
+        ...notif,
         read: true,
-        read_at: now 
+        read_at: now
       })));
+      refreshNotifications();
     } catch (error) {
       console.error('Failed to mark all notifications as read:', error);
     }
@@ -176,7 +180,7 @@ export default function Notifications() {
       isLoading
     });
   }, [notifications, isLoading]);
-  
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -219,8 +223,8 @@ export default function Notifications() {
             </select>
             <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
           </div>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={markAllAsRead}
             disabled={isLoading}
             className="flex items-center gap-2"
@@ -247,8 +251,8 @@ export default function Notifications() {
               <Bell className="h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium mb-1">No notifications found</h3>
               <p className="text-muted-foreground text-center">
-                {statusFilter === 'unread' 
-                  ? 'You have no unread notifications.' 
+                {statusFilter === 'unread'
+                  ? 'You have no unread notifications.'
                   : 'No notifications to display.'}
               </p>
             </div>
@@ -256,16 +260,15 @@ export default function Notifications() {
             <>
               <div className="space-y-0">
                 {notifications?.map((notification) => (
-                  <div 
-                    key={notification._id} 
+                  <div
+                    key={notification._id}
                     className={`flex items-start md:items-center justify-between p-4 border-b last:border-b-0 hover:bg-gray-50 transition-colors ${!notification.read ? 'bg-blue-50' : ''}`}
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3">
                         <div className="flex items-center gap-2">
-                          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                            !notification.read ? "bg-blue-500" : "bg-gray-300"
-                          }`} />
+                          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${!notification.read ? "bg-blue-500" : "bg-gray-300"
+                            }`} />
                           <h3 className="font-semibold text-sm capitalize">
                             {notification.data?.type || notification.recipient_type || 'Notification'}
                           </h3>
@@ -282,14 +285,14 @@ export default function Notifications() {
                     </div>
                     <div className="flex flex-col items-end gap-2 pl-2">
                       <p className="text-xs text-muted-foreground whitespace-nowrap">
-                        {notification.created_at 
+                        {notification.created_at
                           ? formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })
                           : 'Just now'}
                       </p>
                       {notification.type === 'refund' && (
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           className="h-7 text-xs bg-[#003366] text-white hover:bg-[#003366]/90"
                           onClick={() => handleViewRefund(notification)}
                         >
@@ -300,7 +303,7 @@ export default function Notifications() {
                   </div>
                 ))}
               </div>
-              
+
               {/* Pagination */}
               {totalPages > 1 && (
                 <div className="flex justify-center py-4 border-t">
@@ -308,7 +311,6 @@ export default function Notifications() {
                     currentPage={currentPage}
                     totalPages={totalPages}
                     onPageChange={handlePageChange}
-                    isLoading={isLoading}
                   />
                 </div>
               )}
@@ -342,7 +344,7 @@ export default function Notifications() {
               </Button>
             </div>
           </DialogHeader>
-          
+
           {selectedRefund && (
             <div className="space-y-6">
               {/* Vendor and Rider Info */}
